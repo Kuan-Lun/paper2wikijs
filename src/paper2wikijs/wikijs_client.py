@@ -27,6 +27,7 @@ class WikiJSClient:
         # 優先從環境變數取得設定
         self.wiki_url = os.getenv("WIKIJS_GRAPHQL_URL")
         self.api_token = os.getenv("WIKIJS_API_TOKEN")
+        self.locale = os.getenv("WIKIJS_LOCALE")
 
         # 如果環境變數中沒有，嘗試從配置檔案讀取
         if not self.wiki_url or not self.api_token:
@@ -38,6 +39,8 @@ class WikiJSClient:
                     self.wiki_url = config["wiki.js"]["graphql_url"]
                 if not self.api_token:
                     self.api_token = config["wiki.js"]["api"]
+                if not self.locale:
+                    self.locale = config["wiki.js"].get("locale")
             except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
                 raise ValueError(
                     f"無法從環境變數或配置檔案取得 Wiki.js 設定。"
@@ -49,6 +52,8 @@ class WikiJSClient:
             raise ValueError(
                 "Wiki.js 設定不完整。請確保設定了 WIKIJS_GRAPHQL_URL 和 WIKIJS_API_TOKEN"
             )
+        if not self.locale:
+            self.locale = "zh-TW"
 
         self.headers = {
             "Authorization": f"Bearer {self.api_token}",
@@ -166,8 +171,8 @@ class WikiJSClient:
             建立結果
         """
         create_query = """
-        mutation CreatePage($title: String!, $content: String!, $path: String!, $tags: [String!]!, $description: String!) {
-          pages {
+        mutation CreatePage($title: String!, $content: String!, $path: String!, $tags: [String!]!, $description: String!) {{
+          pages {{
             create(
               title: $title
               content: $content
@@ -175,20 +180,20 @@ class WikiJSClient:
               tags: $tags
               description: $description
               editor: "markdown"
-              locale: "en"
+              locale: "{locale}"
               isPublished: true
               isPrivate: false
-            ) {
-              responseResult {
+            ) {{
+              responseResult {{
                 succeeded
                 errorCode
                 slug
                 message
-              }
-            }
-          }
-        }
-        """
+              }}
+            }}
+          }}
+        }}
+        """.format(locale=self.locale)
 
         variables = {
             "title": title,
@@ -228,27 +233,27 @@ class WikiJSClient:
             更新結果
         """
         update_query = """
-        mutation UpdatePage($id: Int!, $title: String!, $content: String!, $tags: [String!]!) {
-          pages {
+        mutation UpdatePage($id: Int!, $title: String!, $content: String!, $tags: [String!]!) {{
+          pages {{
             update(
               id: $id
               title: $title
               content: $content
               tags: $tags
               editor: "markdown"
-              locale: "en"
+              locale: "{locale}"
               isPublished: true
-            ) {
-              responseResult {
+            ) {{
+              responseResult {{
                 succeeded
                 errorCode
                 slug
                 message
-              }
-            }
-          }
-        }
-        """
+              }}
+            }}
+          }}
+        }}
+        """.format(locale=self.locale)
 
         variables = {
             "id": page_id,

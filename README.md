@@ -11,6 +11,7 @@
 3. **避免知識碎片化**: 智能檢測現有相關條目，建議合併而非重複建立
 4. **符合 APA 8 引用格式**: 自動產生符合學術標準的引用
 5. **模組化設計**: 遵循 SOLID 原則，程式碼易於維護和擴充
+6. **繁體中文支援**: 建立 Wiki.js 條目時使用繁體中文，References 保持原文
 
 ## 快速開始
 
@@ -110,6 +111,7 @@ python main.py
 - 所有條目包含 APA 8 格式引用
 - 標註每段內容的出處
 - 維護完整的參考文獻列表
+- 參考文獻維持原文語言
 
 ## 配置設定
 
@@ -132,6 +134,7 @@ python main.py
   # Wiki.js Configuration  
   WIKIJS_GRAPHQL_URL=https://your-wiki.domain/graphql
   WIKIJS_API_TOKEN=your_jwt_token_here
+  WIKIJS_LOCALE=zh-TW
 
   # Optional: Configure base URL for other providers
   # OPENAI_BASE_URL=https://api.openai.com/v1
