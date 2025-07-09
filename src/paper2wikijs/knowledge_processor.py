@@ -1,0 +1,399 @@
+"""
+知識處理器
+使用 LangChain 進行內容分析和知識提取
+"""
+
+import os
+from typing import Dict, List, Tuple, Any
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.messages import SystemMessage, HumanMessage
+
+# 載入環境變數
+load_dotenv()
+
+
+class KnowledgeProcessor:
+    """使用 LangChain 處理知識內容的類"""
+
+    def __init__(
+        self, model_name: str = "gpt-4o-mini", config_path: str = "config.json"
+    ):
+        """
+        初始化知識處理器
+        優先從環境變數取得 API 金鑰，如果沒有則從配置檔案讀取
+
+        Args:
+            model_name: 使用的 LLM 模型名稱
+            config_path: 配置檔案路徑（當環境變數不可用時使用）
+        """
+        # 優先從環境變數取得 API 金鑰
+        api_key = os.getenv("OPENAI_API_KEY")
+
+        # 如果環境變數中沒有，嘗試從配置檔案讀取
+        if not api_key:
+            try:
+                import json
+
+                with open(config_path, "r", encoding="utf-8") as f:
+                    config = json.load(f)
+                api_key = config.get("openai", {}).get("api_key")
+            except (FileNotFoundError, json.JSONDecodeError, KeyError):
+                pass
+
+        if not api_key:
+            self.llm = None
+            print("警告: 未找到 OPENAI_API_KEY，LangChain 功能將不可用")
+            print(
+                "  請設定 OPENAI_API_KEY 環境變數或在 config.json 中設置 OpenAI API 金鑰"
+            )
+        else:
+            self.llm = ChatOpenAI(model=model_name, temperature=0.1, api_key=api_key)
+        self.output_parser = StrOutputParser()
+
+    def analyze_content_for_wiki_structure(
+        self, article_info: Dict[str, str]
+    ) -> Dict[str, Any]:
+        """
+        分析文章內容，根據 paper2wiki.md 的約定提取知識結構
+
+        Args:
+            article_info: 從 ScienceDaily 提取的文章資訊
+
+        Returns:
+            包含不同類型條目的字典
+        """
+        if not self.llm:
+            # 如果沒有 LLM，回傳基本分析結果
+            return {
+                "concepts": [],
+                "methods": [],
+                "applications": [],
+                "problems": [],
+                "main_topic": article_info.get("title", "未知主題"),
+                "suggested_tags": ["科學研究", "ScienceDaily"],
+            }
+        system_prompt = """你是一個專業的知識管理專家。請根據以下規則分析科學文章，並提取適合建立 Wiki 條目的知識點：
+
+## 分析規則（基於 paper2wiki.md）：
+
+1. **概念拆解**：識別文章中的關鍵概念、定義、模型、理論
+2. **技術方法**：提取實驗方法、技術工具、研究方法
+3. **應用案例**：識別具體的應用場景、實證數據
+4. **背景問題**：分析研究解決的問題和動機
+5. **引用關係**：識別與其他研究的關聯
+
+請以 JSON 格式回傳分析結果，包含以下欄位：
+- concepts: 關鍵概念列表
+- methods: 技術方法列表  
+- applications: 應用案例列表
+- problems: 背景問題列表
+- main_topic: 主要話題（用於建立主條目）
+- suggested_tags: 建議的標籤列表
+
+只回傳 JSON，不要包含其他文字。"""
+
+        human_prompt = f"""請分析以下科學文章：
+
+標題：{article_info['title']}
+來源：{article_info['source']}
+日期：{article_info['date']}
+摘要：{article_info['summary']}
+完整內容：{article_info['full_story']}
+URL：{article_info['url']}"""
+
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=human_prompt),
+        ]
+
+        response = self.llm.invoke(messages)
+
+        try:
+            import json
+
+            # 嘗試提取 JSON 部分
+            content = response.content.strip()
+
+            # 如果回應被包裹在程式碼區塊中，提取 JSON 部分
+            if content.startswith("```json"):
+                content = content[7:]
+
+            if content.startswith("```"):
+                content = content[3:]
+
+            if content.endswith("```"):
+                content = content[:-3]
+
+            # 嘗試找到 JSON 物件的開始和結束
+            start_idx = content.find("{")
+            end_idx = content.rfind("}") + 1
+
+            if start_idx != -1 and end_idx > start_idx:
+                json_content = content[start_idx:end_idx]
+                analysis_result = json.loads(json_content)
+                return analysis_result
+            else:
+                raise json.JSONDecodeError("No valid JSON found", content, 0)
+
+        except json.JSONDecodeError as e:
+            print(f"JSON 解析失敗，使用基本結構: {e}")
+            # 如果解析失敗，回傳基本結構
+            return {
+                "concepts": [],
+                "methods": [],
+                "applications": [],
+                "problems": [],
+                "main_topic": article_info["title"],
+                "suggested_tags": ["科學研究"],
+            }
+
+    def generate_wiki_content(
+        self,
+        article_info: Dict[str, str],
+        content_type: str,
+        topic: str,
+        existing_content: str = "",
+    ) -> str:
+        """
+        產生 Wiki 條目內容
+
+        Args:
+            article_info: 文章資訊
+            content_type: 內容類型 (concept, method, application, problem, main)
+            topic: 條目主題
+            existing_content: 現有內容（用於更新現有條目）
+
+        Returns:
+            產生的 Markdown 內容
+        """
+        if not self.llm:
+            # 如果沒有 LLM，產生基本的 Markdown 內容
+            return self._generate_basic_content(
+                article_info, content_type, topic, existing_content
+            )
+        if existing_content:
+            system_prompt = f"""你是一個專業的知識管理專家。請根據新提供的科學文章資訊，更新現有的 Wiki 條目內容。
+
+## 更新要求：
+1. 保留現有內容的有價值部分
+2. 整合新資訊，避免重複
+3. 確保內容的連貫性和完整性
+4. 在頁面底部的 References 部分新增新的引用
+5. 使用 APA 8 格式新增引用
+
+## 內容類型：{content_type}
+## 條目主題：{topic}
+
+請回傳完整的更新後 Markdown 內容。"""
+
+            human_prompt = f"""現有條目內容：
+{existing_content}
+
+---
+
+新增資訊來源：
+標題：{article_info['title']}
+來源：{article_info['source']}
+日期：{article_info['date']}
+摘要：{article_info['summary']}
+完整內容：{article_info['full_story']}
+URL：{article_info['url']}
+
+請更新現有條目，整合新資訊。"""
+
+        else:
+            system_prompt = f"""你是一個專業的知識管理專家。請根據科學文章資訊建立 Wiki 條目內容。
+
+## 建立要求：
+1. 使用清晰的 Markdown 格式
+2. 內容應該準確、簡潔、易於理解
+3. 在頁面底部新增 References 部分，使用 APA 8 格式
+4. 根據內容類型調整結構和重點
+
+## 內容類型：{content_type}
+## 條目主題：{topic}
+
+請回傳完整的 Markdown 內容。"""
+
+            human_prompt = f"""請根據以下科學文章資訊建立 Wiki 條目：
+
+標題：{article_info['title']}
+來源：{article_info['source']}
+日期：{article_info['date']}
+摘要：{article_info['summary']}
+完整內容：{article_info['full_story']}
+URL：{article_info['url']}"""
+
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=human_prompt),
+        ]
+
+        response = self.llm.invoke(messages)
+        return response.content
+
+    def suggest_merge_opportunities(
+        self, new_topic: str, existing_pages: List[Dict]
+    ) -> List[Tuple[str, float]]:
+        """
+        建議合併機會，避免知識碎片化
+
+        Args:
+            new_topic: 新條目主題
+            existing_pages: 現有頁面列表
+
+        Returns:
+            建議合併的頁面列表，包含頁面標題和相似度分數
+        """
+        if not self.llm or not existing_pages:
+            return []
+
+        system_prompt = """你是一個知識管理專家。請分析新主題與現有頁面的相關性，判斷是否應該合併到現有頁面而不是建立新頁面。
+
+請評估每個現有頁面與新主題的相關性，回傳 0-1 之間的分數：
+- 0.8-1.0: 高度相關，建議合併
+- 0.5-0.8: 中等相關，可考慮合併
+- 0-0.5: 低相關性，建議獨立建立
+
+只回傳 JSON 格式的結果，包含 page_title 和 similarity_score 欄位的陣列。"""
+
+        existing_titles = [
+            page["title"] for page in existing_pages[:10]
+        ]  # 限制數量避免過長
+
+        human_prompt = f"""新主題：{new_topic}
+
+現有頁面標題：
+{chr(10).join(existing_titles)}
+
+請評估相關性並回傳 JSON 結果。"""
+
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=human_prompt),
+        ]
+
+        response = self.llm.invoke(messages)
+
+        try:
+            import json
+
+            similarity_results = json.loads(response.content)
+            return [
+                (item["page_title"], item["similarity_score"])
+                for item in similarity_results
+                if item["similarity_score"] > 0.5
+            ]
+        except (json.JSONDecodeError, KeyError):
+            return []
+
+    def _generate_basic_content(
+        self,
+        article_info: Dict[str, str],
+        content_type: str,
+        topic: str,
+        existing_content: str = "",
+    ) -> str:
+        """
+        產生基本的 Markdown 內容（不使用 LLM）
+
+        Args:
+            article_info: 文章資訊
+            content_type: 內容類型
+            topic: 條目主題
+            existing_content: 現有內容
+
+        Returns:
+            基本的 Markdown 內容
+        """
+        if existing_content:
+            # 如果有現有內容，簡單追加新資訊
+            new_section = f"""
+
+## 新增資訊 ({article_info.get('date', '未知日期')})
+
+基於 ScienceDaily 文章《{article_info.get('title', '未知標題')}》的資訊：
+
+### 摘要
+{article_info.get('summary', '無摘要資訊')}
+
+### 詳細內容
+{article_info.get('full_story', '無詳細內容')}
+
+"""
+            # 檢查是否已有 References 部分
+            if (
+                "## References" in existing_content
+                or "### References" in existing_content
+            ):
+                # 在 References 之前插入新內容
+                parts = existing_content.split("## References")
+                if len(parts) == 1:
+                    parts = existing_content.split("### References")
+                    separator = "### References"
+                else:
+                    separator = "## References"
+
+                if len(parts) > 1:
+                    return parts[0] + new_section + separator + parts[1]
+                else:
+                    return existing_content + new_section
+            else:
+                # 直接追加
+                return (
+                    existing_content
+                    + new_section
+                    + self._generate_references_section(article_info)
+                )
+        else:
+            # 建立新內容
+            content = f"""# {topic}
+
+## 概述
+
+{article_info.get('summary', '無摘要資訊')}
+
+## 詳細資訊
+
+{article_info.get('full_story', '無詳細內容')}
+
+## 來源資訊
+
+- **來源**: {article_info.get('source', '未知來源')}
+- **發佈日期**: {article_info.get('date', '未知日期')}
+- **原文連結**: {article_info.get('url', '無連結')}
+
+{self._generate_references_section(article_info)}
+"""
+            return content
+
+    def _generate_references_section(self, article_info: Dict[str, str]) -> str:
+        """
+        產生參考文獻部分
+
+        Args:
+            article_info: 文章資訊
+
+        Returns:
+            參考文獻部分的 Markdown
+        """
+        source = article_info.get("source", "ScienceDaily")
+        date = article_info.get("date", "未知日期")
+        title = article_info.get("title", "未知標題")
+        url = article_info.get("url", "")
+
+        # 嘗試產生 APA 格式的引用
+        # 注意：這是簡化版本，真正的 APA 格式需要更多資訊
+        if url:
+            citation = f"{source}. ({date}). *{title}*. Retrieved from {url}"
+        else:
+            citation = f"{source}. ({date}). *{title}*."
+
+        return f"""
+## References
+
+{citation}
+"""
