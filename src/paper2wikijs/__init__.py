@@ -7,12 +7,24 @@ from .service import ScienceDaily2WikiService
 from .sciencedaily_extractor import ScienceDailyExtractor
 from .wikijs_client import WikiJSClient
 from .knowledge_processor import KnowledgeProcessor
-from .config import load_config
+
+from .config import (
+    OPENAI_API_KEY,
+    WIKIJS_GRAPHQL_URL,
+    WIKIJS_API_TOKEN,
+    WIKIJS_LOCALE,
+    WIKIJS_TIMEOUT,
+)
 
 __all__ = [
     "ScienceDaily2WikiService",
     "ScienceDailyExtractor",
     "WikiJSClient",
     "KnowledgeProcessor",
-    "load_config",
+    # Configuration variables
+    "OPENAI_API_KEY",
+    "WIKIJS_GRAPHQL_URL",
+    "WIKIJS_API_TOKEN",
+    "WIKIJS_LOCALE",
+    "WIKIJS_TIMEOUT",
 ]

@@ -3,21 +3,13 @@
 使用 LangChain 進行內容分析和知識提取
 """
 
-import os
 from typing import Dict, List, Tuple, Any
 
-from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import SystemMessage, HumanMessage
 
-from .config import (
-    OPENAI_API_KEY,
-    WIKIJS_GRAPHQL_URL,
-    WIKIJS_API_TOKEN,
-    WIKIJS_LOCALE,
-    WIKIJS_TIMEOUT,
-)
+from .config import OPENAI_API_KEY
 
 
 class KnowledgeProcessor:

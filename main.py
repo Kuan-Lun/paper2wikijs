@@ -1,114 +1,15 @@
 from src.paper2wikijs import ScienceDaily2WikiService
-from src.paper2wikijs.config import WIKIJS_GRAPHQL_URL, WIKIJS_API_TOKEN
+from src.paper2wikijs import WIKIJS_GRAPHQL_URL, WIKIJS_API_TOKEN
+
+from src.paper2wikijs.sciencedaily_extractor import ScienceDailyExtractor
 
 import requests
-import re
-
-from bs4 import BeautifulSoup
 
 
 headers = {
     "Authorization": f"Bearer {WIKIJS_API_TOKEN}",
     "Content-Type": "application/json",
 }
-
-
-def fetch_sciencedaily_info(url):
-    resp = requests.get(url)
-    soup = BeautifulSoup(resp.text, "html.parser")
-
-    # Title
-    title = soup.find("h1").get_text(strip=True) if soup.find("h1") else ""
-
-    # Date, Source, Summary - 新的格式是在列表項目中，格式為 "- **Date:** March 24, 2025"
-    date, source, summary = "", "", ""
-
-    # 尋找包含 Date:、Source:、Summary: 的文本
-    text_content = soup.get_text()
-
-    # 使用正則表達式來提取信息
-
-    # 提取 Date
-    date_match = re.search(r"-\s*\*\*Date:\*\*\s*([^\n\r-]+)", text_content)
-    if date_match:
-        date = date_match.group(1).strip()
-
-    # 提取 Source
-    source_match = re.search(r"-\s*\*\*Source:\*\*\s*([^\n\r-]+)", text_content)
-    if source_match:
-        source = source_match.group(1).strip()
-
-    # 提取 Summary
-    summary_match = re.search(r"-\s*\*\*Summary:\*\*\s*([^\n\r-]+)", text_content)
-    if summary_match:
-        summary = summary_match.group(1).strip()
-
-    # 如果上述方法沒找到，嘗試尋找其他格式
-    if not date:
-        # 嘗試尋找純文本中的 Date:
-        date_match = re.search(r"Date:\s*([^\n\r,]+)", text_content)
-        if date_match:
-            date = date_match.group(1).strip()
-
-    if not source:
-        # 嘗試尋找純文本中的 Source:
-        source_match = re.search(r"Source:\s*([^\n\r,]+)", text_content)
-        if source_match:
-            source = source_match.group(1).strip()
-
-    if not summary:
-        # 嘗試尋找純文本中的 Summary:
-        summary_match = re.search(r"Summary:\s*([^\n\r-]+)", text_content)
-        if summary_match:
-            summary = summary_match.group(1).strip()
-
-    # FULL STORY - 尋找 "FULL STORY" 後的內容
-    full_story = ""
-
-    # 先嘗試找到 FULL STORY 文本的位置
-    full_story_match = re.search(
-        r"FULL STORY\s*\n\s*(.+?)(?=\n\s*RELATED|Story Source:|$)",
-        text_content,
-        re.DOTALL,
-    )
-    if full_story_match:
-        full_story = full_story_match.group(1).strip()
-        # 清理多餘的空白字符和換行
-        full_story = re.sub(r"\s+", " ", full_story)
-        # 移除不必要的文本
-        full_story = re.sub(r"Co-authors.*?(?=\n|\.|$)", "", full_story)
-        full_story = re.sub(r"Additional research.*?(?=\n|\.|$)", "", full_story)
-    else:
-        # 如果上述方法失敗，嘗試尋找段落
-        full_story_header = soup.find(string=lambda t: t and "FULL STORY" in t)
-        if full_story_header:
-            # 找到包含 FULL STORY 的元素的父級
-            parent = full_story_header.parent
-            if parent:
-                # 尋找後續的段落
-                current = parent.find_next_sibling()
-                story_parts = []
-                while current and current.name in ["p", "div"]:
-                    text = current.get_text(strip=True)
-                    if (
-                        text
-                        and not text.startswith("RELATED")
-                        and not text.startswith("Story Source")
-                    ):
-                        story_parts.append(text)
-                        current = current.find_next_sibling()
-                    else:
-                        break
-                full_story = " ".join(story_parts)
-
-    return {
-        "title": title,
-        "date": date,
-        "source": source,
-        "summary": summary,
-        "full_story": full_story,
-        "url": url,
-    }
 
 
 def search_wiki_pages(search_term: str):
@@ -272,5 +173,5 @@ if __name__ == "__main__":
             print(f"錯誤: {e}")
 
     # 測試原有的 ScienceDaily 提取功能
-    info = fetch_sciencedaily_info(url)
+    info = ScienceDailyExtractor().extract_article_info(url)
     print(f"\n原始提取結果: {info['title']}")
