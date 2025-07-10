@@ -29,6 +29,8 @@ class WikiJSClient:
         self.api_token = os.getenv("WIKIJS_API_TOKEN")
         self.locale = os.getenv("WIKIJS_LOCALE")
         self.verify_ssl = os.getenv("WIKIJS_VERIFY_SSL", "true").lower() != "false"
+        timeout_str = os.getenv("WIKIJS_TIMEOUT")
+        self.timeout = int(timeout_str) if timeout_str else None
 
         # 如果環境變數中沒有，嘗試從配置檔案讀取
         if not self.wiki_url or not self.api_token:
@@ -42,6 +44,9 @@ class WikiJSClient:
                     self.api_token = config["wiki.js"]["api"]
                 if not self.locale:
                     self.locale = config["wiki.js"].get("locale")
+                # 如果環境變數中沒有 timeout，則從配置檔案讀取
+                if self.timeout is None:
+                    self.timeout = config["wiki.js"].get("timeout", 30)
             except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
                 raise ValueError(
                     f"無法從環境變數或配置檔案取得 Wiki.js 設定。"
@@ -55,6 +60,10 @@ class WikiJSClient:
             )
         if not self.locale:
             self.locale = "zh-TW"
+
+        # 如果 timeout 仍然未設定，則使用預設值
+        if self.timeout is None:
+            self.timeout = 30
 
         self.headers = {
             "Authorization": f"Bearer {self.api_token}",
@@ -92,6 +101,7 @@ class WikiJSClient:
             json={"query": query, "variables": variables},
             headers=self.headers,
             verify=self.verify_ssl,
+            timeout=self.timeout,
         )
 
         if response.status_code == 200:
@@ -138,6 +148,7 @@ class WikiJSClient:
             json={"query": query_content, "variables": variables},
             headers=self.headers,
             verify=self.verify_ssl,
+            timeout=self.timeout,
         )
 
         response_data = response.json()
@@ -213,6 +224,7 @@ class WikiJSClient:
             json={"query": create_query, "variables": variables},
             headers=self.headers,
             verify=self.verify_ssl,
+            timeout=self.timeout,
         )
 
         response_data = response.json()
@@ -275,6 +287,7 @@ class WikiJSClient:
             json={"query": update_query, "variables": variables},
             headers=self.headers,
             verify=self.verify_ssl,
+            timeout=self.timeout,
         )
 
         response_data = response.json()
