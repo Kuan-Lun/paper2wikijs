@@ -1,7 +1,6 @@
 from src.paper2wikijs import ScienceDaily2WikiService
 from src.paper2wikijs.config import WIKIJS_GRAPHQL_URL, WIKIJS_API_TOKEN
 
-
 import requests
 import re
 
