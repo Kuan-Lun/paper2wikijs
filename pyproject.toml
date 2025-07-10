@@ -13,10 +13,10 @@ dependencies = [
     "requests>=2.32.4",
     "types-requests>=2.32.4.20250611",
     "beautifulsoup4>=4.13.4",
-    "langchain>=0.1.0",
-    "langchain-openai>=0.1.0",
-    "langchain-core>=0.1.0",
-    "python-dotenv>=1.0.0",
+    "langchain>=0.3.26",
+    "langchain-openai>=0.3.27",
+    "langchain-core>=0.3.68",
+    "python-dotenv>=1.1.1",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
