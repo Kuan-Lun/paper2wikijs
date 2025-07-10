@@ -37,7 +37,7 @@ cp .env.example .env
    - `OPENAI_API_KEY`: 你的 OpenAI API 金鑰
    - `WIKIJS_GRAPHQL_URL`: 你的 Wiki.js GraphQL URL
    - `WIKIJS_API_TOKEN`: 你的 Wiki.js API 令牌
-   - `WIKIJS_LOCALE`: 條目預設語言 (預設 `zh-TW`)
+   - `WIKIJS_LOCALE`: 條目預設語言 (預設 `zh-tw`)
 
 ### 3. 其他雲端平台
 
@@ -56,7 +56,7 @@ vercel env add WIKIJS_LOCALE
 heroku config:set OPENAI_API_KEY=your_key
 heroku config:set WIKIJS_GRAPHQL_URL=your_url
 heroku config:set WIKIJS_API_TOKEN=your_token
-heroku config:set WIKIJS_LOCALE=zh-TW
+heroku config:set WIKIJS_LOCALE=zh-tw
 ```
 
 #### Docker
@@ -65,7 +65,7 @@ heroku config:set WIKIJS_LOCALE=zh-TW
 docker run -e OPENAI_API_KEY=your_key \
            -e WIKIJS_GRAPHQL_URL=your_url \
            -e WIKIJS_API_TOKEN=your_token \
-           -e WIKIJS_LOCALE=zh-TW \
+           -e WIKIJS_LOCALE=zh-tw \
            your_image
 ```
 
@@ -86,7 +86,7 @@ docker run -e OPENAI_API_KEY=your_key \
 python -c "import os; print('OPENAI_API_KEY:', 'SET' if os.getenv('OPENAI_API_KEY') else 'NOT SET')"
 python -c "import os; print('WIKIJS_GRAPHQL_URL:', 'SET' if os.getenv('WIKIJS_GRAPHQL_URL') else 'NOT SET')"
 python -c "import os; print('WIKIJS_API_TOKEN:', 'SET' if os.getenv('WIKIJS_API_TOKEN') else 'NOT SET')"
-python -c "import os; print('WIKIJS_LOCALE:', os.getenv('WIKIJS_LOCALE', 'zh-TW'))"
+python -c "import os; print('WIKIJS_LOCALE:', os.getenv('WIKIJS_LOCALE', 'zh-tw'))"
 
 # 測試基本功能
 python test_basic.py

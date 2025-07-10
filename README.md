@@ -134,7 +134,7 @@ python main.py
   # Wiki.js Configuration  
   WIKIJS_GRAPHQL_URL=https://your-wiki.domain/graphql
   WIKIJS_API_TOKEN=your_jwt_token_here
-  WIKIJS_LOCALE=zh-TW
+  WIKIJS_LOCALE=zh-tw
 
   # Optional: Configure base URL for other providers
   # OPENAI_BASE_URL=https://api.openai.com/v1

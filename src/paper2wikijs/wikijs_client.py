@@ -28,6 +28,8 @@ class WikiJSClient:
         self.wiki_url = os.getenv("WIKIJS_GRAPHQL_URL")
         self.api_token = os.getenv("WIKIJS_API_TOKEN")
         self.locale = os.getenv("WIKIJS_LOCALE")
+        if self.locale:
+            self.locale = self.locale.lower()
         self.verify_ssl = os.getenv("WIKIJS_VERIFY_SSL", "true").lower() != "false"
         timeout_str = os.getenv("WIKIJS_TIMEOUT")
         self.timeout = int(timeout_str) if timeout_str else None
@@ -44,6 +46,8 @@ class WikiJSClient:
                     self.api_token = config["wiki.js"]["api"]
                 if not self.locale:
                     self.locale = config["wiki.js"].get("locale")
+                if self.locale:
+                    self.locale = self.locale.lower()
                 # 如果環境變數中沒有 timeout，則從配置檔案讀取
                 if self.timeout is None:
                     self.timeout = config["wiki.js"].get("timeout", 30)
@@ -59,7 +63,9 @@ class WikiJSClient:
                 "Wiki.js 設定不完整。請確保設定了 WIKIJS_GRAPHQL_URL 和 WIKIJS_API_TOKEN"
             )
         if not self.locale:
-            self.locale = "zh-TW"
+            self.locale = "zh-tw"
+        else:
+            self.locale = self.locale.lower()
 
         # 如果 timeout 仍然未設定，則使用預設值
         if self.timeout is None:
