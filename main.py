@@ -1,5 +1,5 @@
 from src.paper2wikijs import ScienceDaily2WikiService
-from src.paper2wikijs.config import load_config
+from src.paper2wikijs.config import WIKIJS_GRAPHQL_URL, WIKIJS_API_TOKEN
 
 
 import requests
@@ -7,10 +7,9 @@ import re
 
 from bs4 import BeautifulSoup
 
-CONFIG = load_config()
 
 headers = {
-    "Authorization": f"Bearer {CONFIG['WIKIJS_API_TOKEN']}",
+    "Authorization": f"Bearer {WIKIJS_API_TOKEN}",
     "Content-Type": "application/json",
 }
 
@@ -131,7 +130,7 @@ def search_wiki_pages(search_term: str):
     variables = {"term": search_term}
 
     response = requests.post(
-        CONFIG["WIKIJS_GRAPHQL_URL"],
+        WIKIJS_GRAPHQL_URL,
         json={"query": query, "variables": variables},
         headers=headers,
     )
@@ -167,7 +166,7 @@ def get_page_content(page_id: int):
     variables = {"id": page_id}
 
     response = requests.post(
-        CONFIG["WIKIJS_GRAPHQL_URL"],
+        WIKIJS_GRAPHQL_URL,
         json={"query": query_content, "variables": variables},
         headers=headers,
     )
