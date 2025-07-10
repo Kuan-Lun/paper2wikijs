@@ -5,13 +5,19 @@
 
 import os
 from typing import Dict, List, Tuple, Any
+
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import SystemMessage, HumanMessage
 
-# 載入環境變數
-load_dotenv()
+from .config import (
+    OPENAI_API_KEY,
+    WIKIJS_GRAPHQL_URL,
+    WIKIJS_API_TOKEN,
+    WIKIJS_LOCALE,
+    WIKIJS_TIMEOUT,
+)
 
 
 class KnowledgeProcessor:
@@ -29,27 +35,8 @@ class KnowledgeProcessor:
             config_path: 配置檔案路徑（當環境變數不可用時使用）
         """
         # 優先從環境變數取得 API 金鑰
-        api_key = os.getenv("OPENAI_API_KEY")
 
-        # 如果環境變數中沒有，嘗試從配置檔案讀取
-        if not api_key:
-            try:
-                import json
-
-                with open(config_path, "r", encoding="utf-8") as f:
-                    config = json.load(f)
-                api_key = config.get("openai", {}).get("api_key")
-            except (FileNotFoundError, json.JSONDecodeError, KeyError):
-                pass
-
-        if not api_key:
-            self.llm = None
-            print("警告: 未找到 OPENAI_API_KEY，LangChain 功能將不可用")
-            print(
-                "  請設定 OPENAI_API_KEY 環境變數或在 config.json 中設置 OpenAI API 金鑰"
-            )
-        else:
-            self.llm = ChatOpenAI(model=model_name, temperature=0.1, api_key=api_key)
+        self.llm = ChatOpenAI(model=model_name, temperature=0.1, api_key=OPENAI_API_KEY)
         self.output_parser = StrOutputParser()
 
     def analyze_content_for_wiki_structure(
