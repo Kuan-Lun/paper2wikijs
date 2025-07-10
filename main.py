@@ -1,18 +1,18 @@
 from src.paper2wikijs import ScienceDaily2WikiService
+from src.paper2wikijs.config import load_config
+
 
 import requests
-import json
 import re
+
 from bs4 import BeautifulSoup
 
+CONFIG = load_config()
 
-# 保留原有的函數以便向後兼容
-with open("config.json", "r", encoding="utf-8") as f:
-    config = json.load(f)
-
-WIKI_URL = config["wiki.js"]["graphql_url"]
-API_TOKEN = config["wiki.js"]["api"]
-headers = {"Authorization": f"Bearer {API_TOKEN}", "Content-Type": "application/json"}
+headers = {
+    "Authorization": f"Bearer {CONFIG['WIKIJS_API_TOKEN']}",
+    "Content-Type": "application/json",
+}
 
 
 def fetch_sciencedaily_info(url):
@@ -131,7 +131,9 @@ def search_wiki_pages(search_term: str):
     variables = {"term": search_term}
 
     response = requests.post(
-        WIKI_URL, json={"query": query, "variables": variables}, headers=headers
+        CONFIG["WIKIJS_GRAPHQL_URL"],
+        json={"query": query, "variables": variables},
+        headers=headers,
     )
 
     if response.status_code == 200:
@@ -143,13 +145,11 @@ def search_wiki_pages(search_term: str):
             pages = response_data["data"]["pages"]["search"]["results"]
             return pages
         else:
-            print("No pages found or error in response")
+            print("未找到頁面或回應有誤")
             if "errors" in response_data:
-                raise Exception("GraphQL errors:" + response_data["errors"])
+                raise Exception("GraphQL 錯誤:" + response_data["errors"])
     else:
-        raise Exception(
-            f"HTTP Error: {response.status_code}, Response: {response.text}"
-        )
+        raise Exception(f"HTTP 錯誤: {response.status_code}, 回應: {response.text}")
 
 
 def get_page_content(page_id: int):
@@ -167,7 +167,9 @@ def get_page_content(page_id: int):
     variables = {"id": page_id}
 
     response = requests.post(
-        WIKI_URL, json={"query": query_content, "variables": variables}, headers=headers
+        CONFIG["WIKIJS_GRAPHQL_URL"],
+        json={"query": query_content, "variables": variables},
+        headers=headers,
     )
     response_data = response.json()
     if (
@@ -178,24 +180,24 @@ def get_page_content(page_id: int):
         page = response_data["data"]["pages"]["single"]
         return page
     else:
-        print("No page content found or error in response.")
+        print("未找到頁面內容或回應有誤。")
         if "errors" in response_data:
-            print("GraphQL errors:", response_data["errors"])
+            print("GraphQL 錯誤:", response_data["errors"])
 
 
 def sciencedaily_to_wiki(
     url: str, preview_only: bool = False, main_entry_only: bool = False
 ) -> dict:
     """
-    将 ScienceDaily 文章转换为 Wiki 条目的主要函数
+    將 ScienceDaily 文章轉換為 Wiki 條目的主要函數
 
     Args:
         url: ScienceDaily 文章的 URL
-        preview_only: 是否只预览分析结果，不实际创建页面
-        main_entry_only: 是否只创建主条目，不拆分子条目
+        preview_only: 是否只預覽分析結果，不實際創建頁面
+        main_entry_only: 是否只創建主條目，不拆分子條目
 
     Returns:
-        处理结果字典
+        處理結果字典
     """
     service = ScienceDaily2WikiService()
 
@@ -206,46 +208,46 @@ def sciencedaily_to_wiki(
 
 
 if __name__ == "__main__":
-    # 示例：预览分析
+    # 範例：預覽分析
     url = "https://www.sciencedaily.com/releases/2025/03/250324181544.htm"
 
-    print("=== 预览分析结果 ===")
+    print("=== 預覽分析結果 ===")
     preview_result = sciencedaily_to_wiki(url, preview_only=True)
 
     if preview_result["success"]:
-        print(f"文章标题: {preview_result['article_info']['title']}")
-        print(f"主要话题: {preview_result['analysis']['main_topic']}")
-        print(f"识别的概念: {preview_result['analysis']['concepts']}")
-        print(f"识别的方法: {preview_result['analysis']['methods']}")
-        print(f"识别的应用: {preview_result['analysis']['applications']}")
-        print(f"建议标签: {preview_result['analysis']['suggested_tags']}")
+        print(f"文章標題: {preview_result['article_info']['title']}")
+        print(f"主要話題: {preview_result['analysis']['main_topic']}")
+        print(f"識別的概念: {preview_result['analysis']['concepts']}")
+        print(f"識別的方法: {preview_result['analysis']['methods']}")
+        print(f"識別的應用: {preview_result['analysis']['applications']}")
+        print(f"建議標籤: {preview_result['analysis']['suggested_tags']}")
 
         if preview_result["merge_suggestions"]:
-            print("\n=== 合并建议 ===")
+            print("\n=== 合併建議 ===")
             for title, score in preview_result["merge_suggestions"]:
                 print(f"- {title} (相似度: {score:.2f})")
 
-        # 询问是否继续创建页面
-        user_input = input("\n是否继续创建 Wiki 页面? (y/n): ")
+        # 詢問是否繼續創建頁面
+        user_input = input("\n是否繼續創建 Wiki 頁面? (y/n): ")
         if user_input.lower() in ["y", "yes", "是"]:
-            print("\n=== 创建 Wiki 页面 ===")
-            result = sciencedaily_to_wiki(url, main_entry_only=True)  # 先只创建主条目
+            print("\n=== 創建 Wiki 頁面 ===")
+            result = sciencedaily_to_wiki(url, main_entry_only=True)  # 先只創建主條目
 
             if result["success"]:
-                print("处理完成!")
+                print("處理完成!")
                 if result["created_pages"]:
-                    print("创建的页面:")
+                    print("創建的頁面:")
                     for page in result["created_pages"]:
                         print(f"- {page['title']} ({page['type']})")
 
                 if result["updated_pages"]:
-                    print("更新的页面:")
+                    print("更新的頁面:")
                     for page in result["updated_pages"]:
                         print(f"- {page['title']} ({page['type']})")
             else:
-                print(f"处理失败: {result.get('error', '未知错误')}")
+                print(f"處理失敗: {result.get('error', '未知錯誤')}")
     else:
-        print(f"预览失败: {preview_result.get('error', '未知错误')}")
+        print(f"預覽失敗: {preview_result.get('error', '未知錯誤')}")
 
     # 保留原有的測試代碼
     print("\n=== 原有功能測試 ===")
@@ -256,9 +258,9 @@ if __name__ == "__main__":
             for page in pages:
                 print(f"Title: {page['title']}, Path: {page['path']}")
         else:
-            print("No pages found.")
+            print("未找到頁面。")
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"錯誤: {e}")
 
     if pages:
         page_id = int(pages[0]["id"])
@@ -269,7 +271,7 @@ if __name__ == "__main__":
             # print("Markdown content:")
             # print(page["content"])
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"錯誤: {e}")
 
     # 測試原有的 ScienceDaily 提取功能
     info = fetch_sciencedaily_info(url)
