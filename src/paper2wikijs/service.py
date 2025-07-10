@@ -137,7 +137,7 @@ class ScienceDaily2WikiService:
         updated_pages = []
 
         # 處理概念條目
-        concepts = analysis_result.get("concepts", [])
+        concepts: list = analysis_result.get("concepts", [])
         print(f"正在處理 {len(concepts)} 個概念條目...")
         for i, concept in enumerate(concepts, 1):
             print(f"  - 概念 {i}/{len(concepts)}: {concept}")
@@ -148,7 +148,7 @@ class ScienceDaily2WikiService:
                 updated_pages.append(result)
 
         # 處理方法條目
-        methods = analysis_result.get("methods", [])
+        methods: list = analysis_result.get("methods", [])
         print(f"正在處理 {len(methods)} 個方法條目...")
         for i, method in enumerate(methods, 1):
             print(f"  - 方法 {i}/{len(methods)}: {method}")
@@ -159,7 +159,7 @@ class ScienceDaily2WikiService:
                 updated_pages.append(result)
 
         # 處理應用條目
-        applications = analysis_result.get("applications", [])
+        applications: list = analysis_result.get("applications", [])
         print(f"正在處理 {len(applications)} 個應用條目...")
         for i, application in enumerate(applications, 1):
             print(f"  - 應用 {i}/{len(applications)}: {application}")

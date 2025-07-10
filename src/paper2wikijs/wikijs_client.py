@@ -4,13 +4,10 @@ Wiki.js API 客戶端
 """
 
 import requests
-import json
 import os
 from typing import List, Dict, Optional
-from dotenv import load_dotenv
 
-# 載入環境變數
-load_dotenv()
+from .config import WIKIJS_GRAPHQL_URL, WIKIJS_API_TOKEN, WIKIJS_LOCALE, WIKIJS_TIMEOUT
 
 
 class WikiJSClient:
@@ -24,55 +21,11 @@ class WikiJSClient:
         Args:
             config_path: 配置檔案路徑（當環境變數不可用時使用）
         """
-        # 優先從環境變數取得設定
-        self.wiki_url = os.getenv("WIKIJS_GRAPHQL_URL")
-        self.api_token = os.getenv("WIKIJS_API_TOKEN")
-        self.locale = os.getenv("WIKIJS_LOCALE")
-        if self.locale:
-            self.locale = self.locale.lower()
-        self.verify_ssl = os.getenv("WIKIJS_VERIFY_SSL", "true").lower() != "false"
-        timeout_str = os.getenv("WIKIJS_TIMEOUT")
-        self.timeout = int(timeout_str) if timeout_str else None
-
-        # 如果環境變數中沒有，嘗試從配置檔案讀取
-        if not self.wiki_url or not self.api_token:
-            try:
-                with open(config_path, "r", encoding="utf-8") as f:
-                    config = json.load(f)
-
-                if not self.wiki_url:
-                    self.wiki_url = config["wiki.js"]["graphql_url"]
-                if not self.api_token:
-                    self.api_token = config["wiki.js"]["api"]
-                if not self.locale:
-                    self.locale = config["wiki.js"].get("locale")
-                if self.locale:
-                    self.locale = self.locale.lower()
-                # 如果環境變數中沒有 timeout，則從配置檔案讀取
-                if self.timeout is None:
-                    self.timeout = config["wiki.js"].get("timeout", 30)
-            except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
-                raise ValueError(
-                    f"無法從環境變數或配置檔案取得 Wiki.js 設定。"
-                    f"請設定 WIKIJS_GRAPHQL_URL 和 WIKIJS_API_TOKEN 環境變數，"
-                    f"或確保 {config_path} 存在且格式正確。錯誤: {e}"
-                )
-
-        if not self.wiki_url or not self.api_token:
-            raise ValueError(
-                "Wiki.js 設定不完整。請確保設定了 WIKIJS_GRAPHQL_URL 和 WIKIJS_API_TOKEN"
-            )
-        if not self.locale:
-            self.locale = "zh-tw"
-        else:
-            self.locale = self.locale.lower()
 
         # 如果 timeout 仍然未設定，則使用預設值
-        if self.timeout is None:
-            self.timeout = 30
 
         self.headers = {
-            "Authorization": f"Bearer {self.api_token}",
+            "Authorization": f"Bearer {WIKIJS_API_TOKEN}",
             "Content-Type": "application/json",
         }
 
@@ -103,11 +56,10 @@ class WikiJSClient:
         variables = {"term": search_term}
 
         response = requests.post(
-            self.wiki_url,
+            WIKIJS_GRAPHQL_URL,
             json={"query": query, "variables": variables},
             headers=self.headers,
-            verify=self.verify_ssl,
-            timeout=self.timeout,
+            timeout=WIKIJS_TIMEOUT,
         )
 
         if response.status_code == 200:
@@ -150,11 +102,10 @@ class WikiJSClient:
         variables = {"id": page_id}
 
         response = requests.post(
-            self.wiki_url,
+            WIKIJS_GRAPHQL_URL,
             json={"query": query_content, "variables": variables},
             headers=self.headers,
-            verify=self.verify_ssl,
-            timeout=self.timeout,
+            timeout=WIKIJS_TIMEOUT,
         )
 
         response_data = response.json()
@@ -214,7 +165,7 @@ class WikiJSClient:
           }}
         }}
         """.format(
-            locale=self.locale
+            locale=WIKIJS_LOCALE
         )
 
         variables = {
@@ -226,11 +177,10 @@ class WikiJSClient:
         }
 
         response = requests.post(
-            self.wiki_url,
+            WIKIJS_GRAPHQL_URL,
             json={"query": create_query, "variables": variables},
             headers=self.headers,
-            verify=self.verify_ssl,
-            timeout=self.timeout,
+            timeout=WIKIJS_TIMEOUT,
         )
 
         response_data = response.json()
@@ -242,7 +192,7 @@ class WikiJSClient:
             raise Exception("Unknown error occurred")
 
     def update_page(
-        self, page_id: int, title: str, content: str, tags: List[str] = None
+        self, page_id: int, title: str, content: str, tags: list[str] | None = None
     ) -> Dict:
         """
         更新現有頁面
@@ -278,7 +228,7 @@ class WikiJSClient:
           }}
         }}
         """.format(
-            locale=self.locale
+            locale=WIKIJS_LOCALE
         )
 
         variables = {
@@ -289,11 +239,10 @@ class WikiJSClient:
         }
 
         response = requests.post(
-            self.wiki_url,
+            WIKIJS_GRAPHQL_URL,
             json={"query": update_query, "variables": variables},
             headers=self.headers,
-            verify=self.verify_ssl,
-            timeout=self.timeout,
+            timeout=WIKIJS_TIMEOUT,
         )
 
         response_data = response.json()
