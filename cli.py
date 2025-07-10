@@ -3,19 +3,11 @@
 ScienceDaily 到 Wiki.js 的命令列工具
 """
 import argparse
-import sys
 import os
-from pathlib import Path
 from dotenv import load_dotenv
-
-# 載入環境變數
-load_dotenv()
-
-# 加入專案根目錄到 Python 路徑
-project_root = Path(__file__).parent
-sys.path.insert(0, str(project_root))
-
 from src.paper2wikijs import ScienceDaily2WikiService
+
+load_dotenv()
 
 
 def main():

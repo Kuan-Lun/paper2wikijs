@@ -28,6 +28,7 @@ class WikiJSClient:
         self.wiki_url = os.getenv("WIKIJS_GRAPHQL_URL")
         self.api_token = os.getenv("WIKIJS_API_TOKEN")
         self.locale = os.getenv("WIKIJS_LOCALE")
+        self.verify_ssl = os.getenv("WIKIJS_VERIFY_SSL", "true").lower() != "false"
 
         # 如果環境變數中沒有，嘗試從配置檔案讀取
         if not self.wiki_url or not self.api_token:
@@ -90,6 +91,7 @@ class WikiJSClient:
             self.wiki_url,
             json={"query": query, "variables": variables},
             headers=self.headers,
+            verify=self.verify_ssl,
         )
 
         if response.status_code == 200:
@@ -135,6 +137,7 @@ class WikiJSClient:
             self.wiki_url,
             json={"query": query_content, "variables": variables},
             headers=self.headers,
+            verify=self.verify_ssl,
         )
 
         response_data = response.json()
@@ -193,7 +196,9 @@ class WikiJSClient:
             }}
           }}
         }}
-        """.format(locale=self.locale)
+        """.format(
+            locale=self.locale
+        )
 
         variables = {
             "title": title,
@@ -207,6 +212,7 @@ class WikiJSClient:
             self.wiki_url,
             json={"query": create_query, "variables": variables},
             headers=self.headers,
+            verify=self.verify_ssl,
         )
 
         response_data = response.json()
@@ -253,7 +259,9 @@ class WikiJSClient:
             }}
           }}
         }}
-        """.format(locale=self.locale)
+        """.format(
+            locale=self.locale
+        )
 
         variables = {
             "id": page_id,
@@ -266,6 +274,7 @@ class WikiJSClient:
             self.wiki_url,
             json={"query": update_query, "variables": variables},
             headers=self.headers,
+            verify=self.verify_ssl,
         )
 
         response_data = response.json()
