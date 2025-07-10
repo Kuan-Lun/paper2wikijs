@@ -1,8 +1,10 @@
+from src.paper2wikijs import ScienceDaily2WikiService
+
 import requests
 import json
 import re
 from bs4 import BeautifulSoup
-from src.langchain2wikijs import ScienceDaily2WikiService
+
 
 # 保留原有的函數以便向後兼容
 with open("config.json", "r", encoding="utf-8") as f:
