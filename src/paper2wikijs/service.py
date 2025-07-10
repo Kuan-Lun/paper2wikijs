@@ -21,7 +21,7 @@ class ScienceDaily2WikiService:
         """
         self.extractor = ScienceDailyExtractor()
         self.wiki_client = WikiJSClient(config_path)
-        self.knowledge_processor = KnowledgeProcessor(config_path=config_path)
+        self.knowledge_processor = KnowledgeProcessor()
 
     def process_sciencedaily_url(
         self, url: str, create_main_entry_only: bool = False

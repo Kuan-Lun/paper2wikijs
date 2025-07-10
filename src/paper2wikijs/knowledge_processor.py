@@ -8,7 +8,7 @@ from typing import Any
 
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
+from langchain_core.messages import SystemMessage, HumanMessage
 
 from .config import OPENAI_API_KEY
 
@@ -16,9 +16,7 @@ from .config import OPENAI_API_KEY
 class KnowledgeProcessor:
     """使用 LangChain 處理知識內容的類"""
 
-    def __init__(
-        self, model_name: str = "gpt-4o-mini", config_path: str = "config.json"
-    ):
+    def __init__(self, model_name: str = "gpt-4o-mini"):
         """
         初始化知識處理器
         優先從環境變數取得 API 金鑰，如果沒有則從配置檔案讀取
@@ -56,7 +54,7 @@ class KnowledgeProcessor:
             }
         system_prompt = """你是一個專業的知識管理專家。請根據以下規則分析科學文章，並提取適合建立 Wiki 條目的知識點：
 
-## 分析規則（基於 paper2wiki.md）：
+## 分析規則：
 
 1. **概念拆解**：識別文章中的關鍵概念、定義、模型、理論
 2. **技術方法**：提取實驗方法、技術工具、研究方法
@@ -74,13 +72,18 @@ class KnowledgeProcessor:
 
 只回傳 JSON，不要包含其他文字。"""
 
+        # 先將完整內容翻譯成繁體中文
+        translated_content = self._translate_to_traditional_chinese(
+            article_info["full_story"]
+        )
+
         human_prompt = f"""請分析以下科學文章：
 
 標題：{article_info['title']}
 來源：{article_info['source']}
 日期：{article_info['date']}
 摘要：{article_info['summary']}
-完整內容：{article_info['full_story']}
+完整內容：{translated_content}
 URL：{article_info['url']}"""
 
         messages = [
@@ -190,6 +193,11 @@ URL：{article_info['url']}"""
 
 請回傳完整的更新後 Markdown 內容。"""
 
+            # 先將完整內容翻譯成繁體中文
+            translated_content = self._translate_to_traditional_chinese(
+                article_info["full_story"]
+            )
+
             human_prompt = f"""現有條目內容：
 {existing_content}
 
@@ -200,7 +208,7 @@ URL：{article_info['url']}"""
 來源：{article_info['source']}
 日期：{article_info['date']}
 摘要：{article_info['summary']}
-完整內容：{article_info['full_story']}
+完整內容：{translated_content}
 URL：{article_info['url']}
 
 請更新現有條目，整合新資訊。"""
@@ -219,13 +227,18 @@ URL：{article_info['url']}
 
 請回傳完整的 Markdown 內容。"""
 
+            # 先將完整內容翻譯成繁體中文
+            translated_content = self._translate_to_traditional_chinese(
+                article_info["full_story"]
+            )
+
             human_prompt = f"""請根據以下科學文章資訊建立 Wiki 條目：
 
 標題：{article_info['title']}
 來源：{article_info['source']}
 日期：{article_info['date']}
 摘要：{article_info['summary']}
-完整內容：{article_info['full_story']}
+完整內容：{translated_content}
 URL：{article_info['url']}"""
 
         messages = [
@@ -251,6 +264,47 @@ URL：{article_info['url']}"""
             return json.dumps(content, ensure_ascii=False)
         else:
             return str(content)
+
+    def _translate_to_traditional_chinese(self, text: str) -> str:
+        """
+        將文本翻譯成繁體中文
+
+        Args:
+            text: 需要翻譯的文本
+
+        Returns:
+            翻譯後的繁體中文文本
+        """
+        if not self.llm or not text.strip():
+            return text
+
+        system_prompt = """你是一個專業的翻譯專家。請將提供的文本翻譯成繁體中文。
+
+要求：
+1. 保持原文的意思和結構
+2. 使用繁體中文字符
+3. 保持專業術語的準確性
+4. 只回傳翻譯結果，不要包含其他說明文字"""
+
+        human_prompt = f"請將以下文本翻譯成繁體中文：\n\n{text}"
+
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=human_prompt),
+        ]
+
+        try:
+            response = self.llm.invoke(messages)
+            content = response.content
+            if isinstance(content, str):
+                return content.strip()
+            elif isinstance(content, list):
+                return "\n".join(str(item) for item in content).strip()
+            else:
+                return str(content).strip()
+        except Exception as e:
+            print(f"翻譯失敗，使用原文: {e}")
+            return text
 
     def suggest_merge_opportunities(
         self, new_topic: str, existing_pages: list[dict]

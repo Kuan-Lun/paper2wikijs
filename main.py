@@ -127,24 +127,20 @@ if __name__ == "__main__":
                 print(f"- {title} (相似度: {score:.2f})")
 
         # 詢問是否繼續創建頁面
-        user_input = input("\n是否繼續創建 Wiki 頁面? (y/n): ")
-        if user_input.lower() in ["y", "yes", "是"]:
-            print("\n=== 創建 Wiki 頁面 ===")
-            result = sciencedaily_to_wiki(url, main_entry_only=True)  # 先只創建主條目
+        print("\n=== 創建 Wiki 頁面 ===")
+        result = sciencedaily_to_wiki(url, main_entry_only=True)  # 先只創建主條目
 
-            if result["success"]:
-                print("處理完成!")
-                if result["created_pages"]:
-                    print("創建的頁面:")
-                    for page in result["created_pages"]:
-                        print(f"- {page['title']} ({page['type']})")
+        if result["success"]:
+            print("處理完成!")
+            if result["created_pages"]:
+                print("創建的頁面:")
+                for page in result["created_pages"]:
+                    print(f"- {page['title']} ({page['type']})")
 
-                if result["updated_pages"]:
-                    print("更新的頁面:")
-                    for page in result["updated_pages"]:
-                        print(f"- {page['title']} ({page['type']})")
-            else:
-                print(f"處理失敗: {result.get('error', '未知錯誤')}")
+            if result["updated_pages"]:
+                print("更新的頁面:")
+                for page in result["updated_pages"]:
+                    print(f"- {page['title']} ({page['type']})")
     else:
         print(f"預覽失敗: {preview_result.get('error', '未知錯誤')}")
 
