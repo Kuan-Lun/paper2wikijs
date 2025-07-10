@@ -1,20 +1,20 @@
-# 使用示例
+# 使用範例
 
-## 命令行使用
+## 命令列使用
 
-### 预览分析
+### 預覽分析
 
 ```bash
 python cli.py --preview https://www.sciencedaily.com/releases/2025/03/250324181544.htm
 ```
 
-### 创建主条目
+### 建立主條目
 
 ```bash
 python cli.py --create --main-only https://www.sciencedaily.com/releases/2025/03/250324181544.htm
 ```
 
-### 创建完整条目结构
+### 建立完整條目結構
 
 ```bash
 python cli.py --create https://www.sciencedaily.com/releases/2025/03/250324181544.htm
@@ -25,25 +25,25 @@ python cli.py --create https://www.sciencedaily.com/releases/2025/03/25032418154
 ```python
 from src.langchain2wikijs import ScienceDaily2WikiService
 
-# 初始化服务
+# 初始化服務
 service = ScienceDaily2WikiService()
 
-# 预览分析
+# 預覽分析
 url = "https://www.sciencedaily.com/releases/2025/03/250324181544.htm"
 preview = service.preview_analysis(url)
 
 if preview["success"]:
-    print(f"标题: {preview['article_info']['title']}")
-    print(f"主题: {preview['analysis']['main_topic']}")
+    print(f"標題: {preview['article_info']['title']}")
+    print(f"主題: {preview['analysis']['main_topic']}")
     
-    # 创建 Wiki 条目
+    # 建立 Wiki 條目
     result = service.process_sciencedaily_url(url, main_entry_only=True)
     
     if result["success"]:
-        print(f"创建了 {len(result['created_pages'])} 个页面")
+        print(f"建立了 {len(result['created_pages'])} 個頁面")
 ```
 
-## 配置说明
+## 設定說明
 
 ### config.json
 
@@ -56,7 +56,7 @@ if preview["success"]:
 }
 ```
 
-### .env (可选，用于 LangChain 功能)
+### .env（可選，用於 LangChain 功能）
 
 ```bash
 OPENAI_API_KEY=your_openai_api_key_here
@@ -64,74 +64,74 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 ## 功能特性
 
-### ✅ 已实现功能
+### 已實作功能
 
-1. **内容提取**: 从 ScienceDaily URL 提取文章信息
-2. **基础分析**: 即使没有 OpenAI API 也能工作
-3. **Wiki 创建**: 创建结构化的 Wiki.js 条目
-4. **内容更新**: 智能更新现有条目
-5. **搜索集成**: 搜索相关现有页面
-6. **引用格式**: 自动生成 APA 格式引用
-7. **模块化设计**: 遵循 SOLID 原则
+1. **內容擷取**: 從 ScienceDaily URL 擷取文章資訊
+2. **基礎分析**: 即使沒有 OpenAI API 也能運作
+3. **Wiki 建立**: 建立結構化的 Wiki.js 條目
+4. **內容更新**: 智慧更新現有條目
+5. **搜尋整合**: 搜尋相關現有頁面
+6. **引用格式**: 自動產生 APA 格式引用
+7. **模組化設計**: 遵循 SOLID 原則
 
-### 🔧 LangChain 增强功能 (需要 OpenAI API)
+### LangChain 增強功能（需要 OpenAI API）
 
-1. **智能分析**: 深度分析文章结构
-2. **概念提取**: 自动识别关键概念
-3. **方法识别**: 提取技术方法和工具
-4. **应用分析**: 识别应用场景
-5. **合并建议**: 智能建议条目合并
-6. **内容生成**: 高质量的 Markdown 内容
+1. **智慧分析**: 深度分析文章結構
+2. **概念擷取**: 自動識別關鍵概念
+3. **方法識別**: 擷取技術方法和工具
+4. **應用分析**: 識別應用場景
+5. **合併建議**: 智慧建議條目合併
+6. **內容產生**: 高品質的 Markdown 內容
 
 ## 工作流程
 
 ```mermaid
 graph TD
-    A[ScienceDaily URL] --> B[内容提取]
-    B --> C[知识分析]
-    C --> D[搜索现有页面]
-    D --> E[合并建议]
-    E --> F{创建或更新?}
-    F -->|创建| G[生成新条目]
-    F -->|更新| H[更新现有条目]
+    A[ScienceDaily URL] --> B[內容擷取]
+    B --> C[知識分析]
+    C --> D[搜尋現有頁面]
+    D --> E[合併建議]
+    E --> F{建立或更新?}
+    F -->|建立| G[產生新條目]
+    F -->|更新| H[更新現有條目]
     G --> I[Wiki.js]
     H --> I
 ```
 
-## 输出示例
+## 輸出範例
 
-### 生成的 Wiki 条目格式
+### 產生的 Wiki 條目格式
 
 ```markdown
-# 机器学习在医学诊断中的应用
+# 機器學習在醫學診斷中的應用
 
 ## 概述
 
-研究展示了人工智能在医学诊断中的应用...
+研究展示了人工智慧在醫學診斷中的應用...
 
-## 详细信息
+## 詳細資訊
 
-人工智能技术，特别是深度学习，在医学影像分析中显示出巨大潜力...
+人工智慧技術，特別是深度學習，在醫學影像分析中顯示出巨大潛力...
 
-## 来源信息
+## 來源資訊
 
-- **来源**: ScienceDaily
-- **发布日期**: 2024-01-01
-- **原文链接**: https://www.sciencedaily.com/...
+- **來源**: ScienceDaily
+- **發佈日期**: 2024-01-01
+- **原文連結**: https://www.sciencedaily.com/...
 
 ## References
 
-ScienceDaily. (2024-01-01). *机器学习在医学诊断中的应用*. Retrieved from https://www.sciencedaily.com/...
+ScienceDaily. (2024-01-01). *機器學習在醫學診斷中的應用*. Retrieved from https://www.sciencedaily.com/...
 ```
 
-## 故障排除
+## 疑難排解
 
-### 常见问题
+### 常見問題
 
-1. **导入错误**: 确保在项目根目录运行
-2. **配置错误**: 检查 config.json 格式和内容
-3. **网络问题**: 确保能访问 ScienceDaily 和 Wiki.js
-4. **权限问题**: 确保 Wiki.js API 令牌有创建/编辑权限
+1. **匯入錯誤**: 確認在專案根目錄執行
+2. **設定錯誤**: 檢查 config.json 格式與內容
+3. **網路問題**: 確認能存取 ScienceDaily 與 Wiki.js
+4. **權限問題**: 確認 Wiki.js API 權杖有建立/編輯權限
 
 ### 除錯模式
 
@@ -145,13 +145,13 @@ python cli.py --preview <url>
 
 ### 新增內容來源
 
-1. 建立新的提取器類別 (如 `ArxivExtractor`)
+1. 建立新的擷取器類別（如 `ArxivExtractor`）
 2. 實作相同的介面方法
 3. 在主服務中整合
 
 ### 支援其他 Wiki 平台
 
-1. 實作新的客戶端類別 (如 `MediaWikiClient`)
+1. 實作新的客戶端類別（如 `MediaWikiClient`）
 2. 保持相同的介面
 3. 在服務類中替換客戶端
 
