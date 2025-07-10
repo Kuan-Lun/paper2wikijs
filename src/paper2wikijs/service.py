@@ -56,6 +56,7 @@ class ScienceDaily2WikiService:
         existing_pages = self.wiki_client.search_pages(main_topic)
 
         # 4. 建議合併機會
+        print("正在建議合併機會...")
         merge_suggestions = self.knowledge_processor.suggest_merge_opportunities(
             main_topic, existing_pages
         )
@@ -70,6 +71,7 @@ class ScienceDaily2WikiService:
         }
 
         # 5. 處理主條目
+        print("正在處理主條目...")
         main_page_result = self._process_main_entry(
             article_info,
             main_topic,
@@ -84,6 +86,7 @@ class ScienceDaily2WikiService:
             results["updated_pages"].append(main_page_result)
 
         # 6. 如果不只建立主條目，則建立子條目
+        print("正在處理子條目...")
         if not create_main_entry_only:
             sub_entries_result = self._process_sub_entries(
                 article_info, analysis_result
