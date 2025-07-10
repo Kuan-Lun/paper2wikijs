@@ -137,7 +137,10 @@ class ScienceDaily2WikiService:
         updated_pages = []
 
         # 處理概念條目
-        for concept in analysis_result.get("concepts", []):
+        concepts = analysis_result.get("concepts", [])
+        print(f"正在處理 {len(concepts)} 個概念條目...")
+        for i, concept in enumerate(concepts, 1):
+            print(f"  - 概念 {i}/{len(concepts)}: {concept}")
             result = self._create_or_update_entry(article_info, "concept", concept)
             if result["action"] == "created":
                 created_pages.append(result)
@@ -145,7 +148,10 @@ class ScienceDaily2WikiService:
                 updated_pages.append(result)
 
         # 處理方法條目
-        for method in analysis_result.get("methods", []):
+        methods = analysis_result.get("methods", [])
+        print(f"正在處理 {len(methods)} 個方法條目...")
+        for i, method in enumerate(methods, 1):
+            print(f"  - 方法 {i}/{len(methods)}: {method}")
             result = self._create_or_update_entry(article_info, "method", method)
             if result["action"] == "created":
                 created_pages.append(result)
@@ -153,7 +159,10 @@ class ScienceDaily2WikiService:
                 updated_pages.append(result)
 
         # 處理應用條目
-        for application in analysis_result.get("applications", []):
+        applications = analysis_result.get("applications", [])
+        print(f"正在處理 {len(applications)} 個應用條目...")
+        for i, application in enumerate(applications, 1):
+            print(f"  - 應用 {i}/{len(applications)}: {application}")
             result = self._create_or_update_entry(
                 article_info, "application", application
             )
@@ -168,7 +177,16 @@ class ScienceDaily2WikiService:
         self, article_info: Dict[str, str], content_type: str, topic: str
     ) -> Dict[str, any]:
         """建立或更新條目"""
+        if not topic:
+            return {
+                "action": "skipped",
+                "title": topic,
+                "type": content_type,
+                "success": False,
+                "error": "Topic is empty, skipping.",
+            }
         # 搜尋現有相關頁面
+        print(f"    正在為 '{topic}' 搜尋現有頁面...")
         existing_pages = self.wiki_client.search_pages(topic)
 
         # 檢查是否有高度匹配的頁面
