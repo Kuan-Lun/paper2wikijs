@@ -8,7 +8,7 @@ from typing import Any
 
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
 
 from .config import OPENAI_API_KEY
 
@@ -92,28 +92,52 @@ URL：{article_info['url']}"""
 
         try:
             # 嘗試提取 JSON 部分
-            content = response.content.strip()
+            content = response.content
+            if isinstance(content, str):
+                content = content.strip()
 
-            # 如果回應被包裹在程式碼區塊中，提取 JSON 部分
-            if content.startswith("```json"):
-                content = content[7:]
+                # 如果回應被包裹在程式碼區塊中，提取 JSON 部分
+                if content.startswith("```json"):
+                    content = content[7:]
 
-            if content.startswith("```"):
-                content = content[3:]
+                if content.startswith("```"):
+                    content = content[3:]
 
-            if content.endswith("```"):
-                content = content[:-3]
+                if content.endswith("```"):
+                    content = content[:-3]
 
-            # 嘗試找到 JSON 物件的開始和結束
-            start_idx = content.find("{")
-            end_idx = content.rfind("}") + 1
+                # 嘗試找到 JSON 物件的開始和結束
+                start_idx = content.find("{")
+                end_idx = content.rfind("}") + 1
 
-            if start_idx != -1 and end_idx > start_idx:
-                json_content = content[start_idx:end_idx]
-                analysis_result = json.loads(json_content)
-                return analysis_result
+                if start_idx != -1 and end_idx > start_idx:
+                    json_content = content[start_idx:end_idx]
+                    analysis_result = json.loads(json_content)
+                    return analysis_result
+                else:
+                    raise json.JSONDecodeError("No valid JSON found", content, 0)
+            elif isinstance(content, list):
+                # 將列表轉為字符串再嘗試解析
+                content_str = "\n".join(
+                    (
+                        json.dumps(item, ensure_ascii=False)
+                        if isinstance(item, dict)
+                        else str(item)
+                    )
+                    for item in content
+                )
+                start_idx = content_str.find("{")
+                end_idx = content_str.rfind("}") + 1
+                if start_idx != -1 and end_idx > start_idx:
+                    json_content = content_str[start_idx:end_idx]
+                    analysis_result = json.loads(json_content)
+                    return analysis_result
+                else:
+                    raise json.JSONDecodeError("No valid JSON found", content_str, 0)
+            elif isinstance(content, dict):
+                return content
             else:
-                raise json.JSONDecodeError("No valid JSON found", content, 0)
+                raise json.JSONDecodeError("No valid JSON found", str(content), 0)
 
         except json.JSONDecodeError as e:
             print(f"JSON 解析失敗，使用基本結構: {e}")
@@ -210,7 +234,23 @@ URL：{article_info['url']}"""
         ]
 
         response = self.llm.invoke(messages)
-        return response.content
+        content = response.content
+        if isinstance(content, str):
+            return content
+        elif isinstance(content, list):
+            # Join list elements as strings, converting dicts to JSON
+            return "\n".join(
+                (
+                    json.dumps(item, ensure_ascii=False)
+                    if isinstance(item, dict)
+                    else str(item)
+                )
+                for item in content
+            )
+        elif isinstance(content, dict):
+            return json.dumps(content, ensure_ascii=False)
+        else:
+            return str(content)
 
     def suggest_merge_opportunities(
         self, new_topic: str, existing_pages: list[dict]
@@ -256,13 +296,19 @@ URL：{article_info['url']}"""
         response = self.llm.invoke(messages)
 
         try:
-            similarity_results = json.loads(response.content)
+            content = response.content
+            if isinstance(content, str):
+                similarity_results = json.loads(content)
+            elif isinstance(content, list):
+                similarity_results = content
+            else:
+                raise ValueError("LLM 回應內容格式無法解析")
             return [
                 (item["page_title"], item["similarity_score"])
                 for item in similarity_results
                 if item["similarity_score"] > 0.5
             ]
-        except (json.JSONDecodeError, KeyError):
+        except (json.JSONDecodeError, KeyError, ValueError):
             return []
 
     def _generate_basic_content(
