@@ -4,13 +4,20 @@ ScienceDaily 內容抓取器
 """
 
 import requests
+import os
 import re
-from typing import Dict, Optional
+from typing import Dict
 from bs4 import BeautifulSoup
 
 
 class ScienceDailyExtractor:
     """從 ScienceDaily 網站提取內容的類"""
+
+    def __init__(self) -> None:
+        """初始化，可透過環境變數控制 SSL 驗證"""
+        self.verify_ssl = (
+            os.getenv("SCIENTEDAILY_VERIFY_SSL", "true").lower() != "false"
+        )
 
     def extract_article_info(self, url: str) -> Dict[str, str]:
         """
@@ -22,7 +29,7 @@ class ScienceDailyExtractor:
         Returns:
             包含文章資訊的字典
         """
-        resp = requests.get(url)
+        resp = requests.get(url, verify=self.verify_ssl)
         soup = BeautifulSoup(resp.text, "html.parser")
 
         # Title
