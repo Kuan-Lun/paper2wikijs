@@ -3,7 +3,8 @@
 使用 LangChain 進行內容分析和知識提取
 """
 
-from typing import Dict, List, Tuple, Any
+import json
+from typing import Any
 
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
@@ -32,8 +33,8 @@ class KnowledgeProcessor:
         self.output_parser = StrOutputParser()
 
     def analyze_content_for_wiki_structure(
-        self, article_info: Dict[str, str]
-    ) -> Dict[str, Any]:
+        self, article_info: dict[str, str]
+    ) -> dict[str, Any]:
         """
         分析文章內容，根據 paper2wiki.md 的約定提取知識結構
 
@@ -90,8 +91,6 @@ URL：{article_info['url']}"""
         response = self.llm.invoke(messages)
 
         try:
-            import json
-
             # 嘗試提取 JSON 部分
             content = response.content.strip()
 
@@ -130,7 +129,7 @@ URL：{article_info['url']}"""
 
     def generate_wiki_content(
         self,
-        article_info: Dict[str, str],
+        article_info: dict[str, str],
         content_type: str,
         topic: str,
         existing_content: str = "",
@@ -214,8 +213,8 @@ URL：{article_info['url']}"""
         return response.content
 
     def suggest_merge_opportunities(
-        self, new_topic: str, existing_pages: List[Dict]
-    ) -> List[Tuple[str, float]]:
+        self, new_topic: str, existing_pages: list[dict]
+    ) -> list[tuple[str, float]]:
         """
         建議合併機會，避免知識碎片化
 
@@ -257,8 +256,6 @@ URL：{article_info['url']}"""
         response = self.llm.invoke(messages)
 
         try:
-            import json
-
             similarity_results = json.loads(response.content)
             return [
                 (item["page_title"], item["similarity_score"])
@@ -270,7 +267,7 @@ URL：{article_info['url']}"""
 
     def _generate_basic_content(
         self,
-        article_info: Dict[str, str],
+        article_info: dict[str, str],
         content_type: str,
         topic: str,
         existing_content: str = "",
@@ -348,7 +345,7 @@ URL：{article_info['url']}"""
 """
             return content
 
-    def _generate_references_section(self, article_info: Dict[str, str]) -> str:
+    def _generate_references_section(self, article_info: dict[str, str]) -> str:
         """
         產生參考文獻部分
 
