@@ -3,9 +3,9 @@ Wiki.js API 客戶端
 負責與 Wiki.js 的 GraphQL API 互動
 """
 
+from typing import Optional
+
 import requests
-import os
-from typing import List, Dict, Optional
 
 from .config import WIKIJS_GRAPHQL_URL, WIKIJS_API_TOKEN, WIKIJS_LOCALE, WIKIJS_TIMEOUT
 
@@ -29,7 +29,7 @@ class WikiJSClient:
             "Content-Type": "application/json",
         }
 
-    def search_pages(self, search_term: str) -> List[Dict]:
+    def search_pages(self, search_term: str) -> list[dict]:
         """
         搜尋 Wiki 頁面
 
@@ -78,7 +78,7 @@ class WikiJSClient:
                 f"HTTP Error: {response.status_code}, Response: {response.text}"
             )
 
-    def get_page_content(self, page_id: int) -> Optional[Dict]:
+    def get_page_content(self, page_id: int) -> Optional[dict]:
         """
         取得頁面內容
 
@@ -125,9 +125,9 @@ class WikiJSClient:
         title: str,
         content: str,
         path: str,
-        tags: Optional[List[str]] = None,
+        tags: Optional[list[str]] = None,
         description: str = "",
-    ) -> Dict:
+    ) -> dict:
         """
         建立新頁面
 
@@ -193,7 +193,7 @@ class WikiJSClient:
 
     def update_page(
         self, page_id: int, title: str, content: str, tags: list[str] | None = None
-    ) -> Dict:
+    ) -> dict:
         """
         更新現有頁面
 
