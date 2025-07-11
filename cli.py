@@ -3,11 +3,7 @@
 ScienceDaily 到 Wiki.js 的命令列工具
 """
 import argparse
-import os
-from dotenv import load_dotenv
 from src.paper2wikijs import ScienceDaily2WikiService
-
-load_dotenv()
 
 
 def main():
@@ -43,22 +39,6 @@ def main():
     )
 
     args = parser.parse_args()
-
-    # 檢查是否有環境變數設定
-    has_env_vars = bool(
-        os.getenv("WIKIJS_GRAPHQL_URL") and os.getenv("WIKIJS_API_TOKEN")
-    )
-
-    # 如果沒有環境變數，檢查配置檔案
-    if not has_env_vars and not os.path.exists(args.config):
-        print(f"錯誤: 未找到環境變數設定且配置檔案 {args.config} 不存在")
-        print("請選擇以下方式之一進行設定:")
-        print("1. 設定環境變數:")
-        print("   WIKIJS_GRAPHQL_URL=https://your-wiki.com/graphql")
-        print("   WIKIJS_API_TOKEN=your_api_token")
-        print("   OPENAI_API_KEY=your_openai_key")
-        print("2. 或確保配置檔案存在並包含 Wiki.js 的連線資訊")
-        return 1
 
     # 檢查 URL 格式
     if not args.url.startswith("https://www.sciencedaily.com/"):
