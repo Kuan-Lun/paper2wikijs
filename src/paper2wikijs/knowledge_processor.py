@@ -180,9 +180,7 @@ class KnowledgeProcessor:
         """
         if not self.llm:
             # 如果沒有 LLM，產生基本的 Markdown 內容
-            return self._generate_basic_content(
-                article_info, content_type, topic, existing_content
-            )
+            return self._generate_basic_content(article_info, topic, existing_content)
         if existing_content:
             system_prompt = dedent(
                 f"""
@@ -352,7 +350,6 @@ class KnowledgeProcessor:
     def _generate_basic_content(
         self,
         article_info: dict[str, str],
-        content_type: str,
         topic: str,
         existing_content: str = "",
     ) -> str:
@@ -361,7 +358,6 @@ class KnowledgeProcessor:
 
         Args:
             article_info: 文章資訊
-            content_type: 內容類型
             topic: 條目主題
             existing_content: 現有內容
 
