@@ -13,7 +13,7 @@ from .config import WIKIJS_GRAPHQL_URL, WIKIJS_API_TOKEN, WIKIJS_LOCALE, WIKIJS_
 class WikiJSClient:
     """Wiki.js GraphQL API 客戶端"""
 
-    def __init__(self, config_path: str = "config.json"):
+    def __init__(self):
         """
         初始化 Wiki.js 客戶端
         優先從環境變數取得設定，如果沒有則從配置檔案讀取

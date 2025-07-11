@@ -20,7 +20,7 @@ class ScienceDaily2WikiService:
             config_path: Wiki.js 配置檔案路徑
         """
         self.extractor = ScienceDailyExtractor()
-        self.wiki_client = WikiJSClient(config_path)
+        self.wiki_client = WikiJSClient()
         self.knowledge_processor = KnowledgeProcessor()
 
     def process_sciencedaily_url(
