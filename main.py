@@ -4,6 +4,7 @@ from src.paper2wikijs import WIKIJS_GRAPHQL_URL, WIKIJS_API_TOKEN
 from src.paper2wikijs.sciencedaily_extractor import ScienceDailyExtractor
 
 import requests
+from textwrap import dedent
 
 
 headers = {
@@ -13,19 +14,21 @@ headers = {
 
 
 def search_wiki_pages(search_term: str):
-    query = """
-    query SearchPages($term: String!) {
-      pages {
-        search(query: $term) {
-          results {
-            id
-            title
-            path
+    query = dedent(
+        """
+        query SearchPages($term: String!) {
+          pages {
+            search(query: $term) {
+              results {
+                id
+                title
+                path
+              }
+            }
           }
         }
-      }
-    }
-    """.strip()
+    """
+    ).strip()
 
     variables = {"term": search_term}
 
@@ -52,16 +55,18 @@ def search_wiki_pages(search_term: str):
 
 
 def get_page_content(page_id: int):
-    query_content = """
-    query PageContent($id: Int!) {
-      pages {
-        single(id: $id) {
-          title
-          content
+    query_content = dedent(
+        """
+        query PageContent($id: Int!) {
+          pages {
+            single(id: $id) {
+              title
+              content
+            }
+          }
         }
-      }
-    }
     """
+    )
 
     variables = {"id": page_id}
 

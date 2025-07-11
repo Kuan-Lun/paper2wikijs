@@ -4,6 +4,7 @@ Wiki.js API 客戶端
 """
 
 from typing import Optional
+from textwrap import dedent
 
 import requests
 
@@ -39,19 +40,21 @@ class WikiJSClient:
         Returns:
             搜尋結果列表
         """
-        query = """
-        query SearchPages($term: String!) {
-          pages {
-            search(query: $term) {
-              results {
-                id
-                title
-                path
+        query = dedent(
+            """
+            query SearchPages($term: String!) {
+              pages {
+                search(query: $term) {
+                  results {
+                    id
+                    title
+                    path
+                  }
+                }
               }
             }
-          }
-        }
-        """.strip()
+        """
+        ).strip()
 
         variables = {"term": search_term}
 
@@ -88,16 +91,18 @@ class WikiJSClient:
         Returns:
             頁面內容字典，如果未找到則回傳 None
         """
-        query_content = """
-        query PageContent($id: Int!) {
-          pages {
-            single(id: $id) {
-              title
-              content
+        query_content = dedent(
+            """
+            query PageContent($id: Int!) {
+              pages {
+                single(id: $id) {
+                  title
+                  content
+                }
+              }
             }
-          }
-        }
         """
+        )
 
         variables = {"id": page_id}
 
@@ -141,31 +146,31 @@ class WikiJSClient:
         Returns:
             建立結果
         """
-        create_query = """
-        mutation CreatePage($title: String!, $content: String!, $path: String!, $tags: [String!]!, $description: String!) {{
-          pages {{
-            create(
-              title: $title
-              content: $content
-              path: $path
-              tags: $tags
-              description: $description
-              editor: "markdown"
-              locale: "{locale}"
-              isPublished: true
-              isPrivate: false
-            ) {{
-              responseResult {{
-                succeeded
-                errorCode
-                slug
-                message
+        create_query = dedent(
+            f"""
+            mutation CreatePage($title: String!, $content: String!, $path: String!, $tags: [String!]!, $description: String!) {{
+              pages {{
+                create(
+                  title: $title
+                  content: $content
+                  path: $path
+                  tags: $tags
+                  description: $description
+                  editor: "markdown"
+                  locale: "{WIKIJS_LOCALE}"
+                  isPublished: true
+                  isPrivate: false
+                ) {{
+                  responseResult {{
+                    succeeded
+                    errorCode
+                    slug
+                    message
+                  }}
+                }}
               }}
             }}
-          }}
-        }}
-        """.format(
-            locale=WIKIJS_LOCALE
+        """
         )
 
         variables = {
@@ -206,29 +211,29 @@ class WikiJSClient:
         Returns:
             更新結果
         """
-        update_query = """
-        mutation UpdatePage($id: Int!, $title: String!, $content: String!, $tags: [String!]!) {{
-          pages {{
-            update(
-              id: $id
-              title: $title
-              content: $content
-              tags: $tags
-              editor: "markdown"
-              locale: "{locale}"
-              isPublished: true
-            ) {{
-              responseResult {{
-                succeeded
-                errorCode
-                slug
-                message
+        update_query = dedent(
+            f"""
+            mutation UpdatePage($id: Int!, $title: String!, $content: String!, $tags: [String!]!) {{
+              pages {{
+                update(
+                  id: $id
+                  title: $title
+                  content: $content
+                  tags: $tags
+                  editor: "markdown"
+                  locale: "{WIKIJS_LOCALE}"
+                  isPublished: true
+                ) {{
+                  responseResult {{
+                    succeeded
+                    errorCode
+                    slug
+                    message
+                  }}
+                }}
               }}
             }}
-          }}
-        }}
-        """.format(
-            locale=WIKIJS_LOCALE
+        """
         )
 
         variables = {
