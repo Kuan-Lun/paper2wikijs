@@ -37,12 +37,13 @@ class TranslationService:
 
         system_prompt = dedent(
             """
-            你是一個專業的翻譯專家。請將提供的文本翻譯成繁體中文。
+            請將提供的文本翻譯成繁體中文。
 
             要求：
             1. 保持原文的意思和結構
             2. 使用繁體中文字符
-            3. 保持專業術語的準確性
+            3. 保持專業術語的準確性。
+               若原文包含專有名詞或術語，第一次出現時請以「譯文 (原文)」格式呈現，例如「共整合 (cointegration)」。後續出現同一術語時，僅使用譯文。
             4. 只回傳翻譯結果，不要包含其他說明文字
         """
         )
@@ -89,7 +90,7 @@ class TranslationService:
 
         system_prompt = dedent(
             f"""
-            你是一個專業的翻譯專家。請將提供的文本翻譯成{target_language}。
+            請將提供的文本翻譯成{target_language}。
 
             要求：
             1. 保持原文的意思和結構
