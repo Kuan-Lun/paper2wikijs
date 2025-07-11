@@ -5,6 +5,7 @@
 
 import json
 from typing import Any
+from textwrap import dedent
 
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
@@ -46,48 +47,50 @@ class KnowledgeProcessor:
         """
         if not self.llm:
             # 如果沒有 LLM，回傳基本分析結果
-            return {
-                "concepts": [],
-                "methods": [],
-                "applications": [],
-                "problems": [],
-                "main_topic": article_info.get("title", "未知主題"),
-                "suggested_tags": ["科學研究", "ScienceDaily"],
-            }
-        system_prompt = """你是一個專業的知識管理專家。請根據以下規則分析科學文章，並提取適合建立 Wiki 條目的知識點：
+            raise ValueError(
+                "LLM 未初始化，無法進行內容分析。請檢查 API 金鑰或模型名稱。"
+            )
+        system_prompt = dedent(
+            """
+            你是一個專業的知識管理專家。請根據以下規則分析科學文章，並提取適合建立 Wiki 條目的知識點：
 
-## 分析規則：
+            ## 分析規則：
 
-1. **概念拆解**：識別文章中的關鍵概念、定義、模型、理論
-2. **技術方法**：提取實驗方法、技術工具、研究方法
-3. **應用案例**：識別具體的應用場景、實證數據
-4. **背景問題**：分析研究解決的問題和動機
-5. **引用關係**：識別與其他研究的關聯
+            1. **概念拆解**：識別文章中的關鍵概念、定義、模型、理論
+            2. **技術方法**：提取實驗方法、技術工具、研究方法
+            3. **應用案例**：識別具體的應用場景、實證數據
+            4. **背景問題**：分析研究解決的問題和動機
+            5. **引用關係**：識別與其他研究的關聯
 
-請以 JSON 格式回傳分析結果，包含以下欄位：
-- concepts: 關鍵概念列表
-- methods: 技術方法列表  
-- applications: 應用案例列表
-- problems: 背景問題列表
-- main_topic: 主要話題（用於建立主條目）
-- suggested_tags: 建議的標籤列表
+            請以 JSON 格式回傳分析結果，包含以下欄位：
+            - concepts: 關鍵概念列表
+            - methods: 技術方法列表
+            - applications: 應用案例列表
+            - problems: 背景問題列表
+            - main_topic: 主要話題（用於建立主條目）
+            - suggested_tags: 建議的標籤列表
 
-只回傳 JSON，不要包含其他文字。"""
+            只回傳 JSON，不要包含其他文字。
+        """
+        )
 
         # 先將完整內容翻譯成繁體中文
         translated_content = self.translation_service.translate_to_traditional_chinese(
             article_info["full_story"]
         )
 
-        human_prompt = f"""請分析以下科學文章：
+        human_prompt = dedent(
+            f"""
+            請分析以下科學文章：
 
-標題：{article_info['title']}
-來源：{article_info['source']}
-日期：{article_info['date']}
-摘要：{article_info['summary']}
-完整內容：{translated_content}
-URL：{article_info['url']}"""
-
+            標題：{article_info['title']}
+            來源：{article_info['source']}
+            日期：{article_info['date']}
+            摘要：{article_info['summary']}
+            完整內容：{translated_content}
+            URL：{article_info['url']}
+        """
+        )
         messages = [
             SystemMessage(content=system_prompt),
             HumanMessage(content=human_prompt),
@@ -181,72 +184,82 @@ URL：{article_info['url']}"""
                 article_info, content_type, topic, existing_content
             )
         if existing_content:
-            system_prompt = f"""你是一個專業的知識管理專家。請根據新提供的科學文章資訊，更新現有的 Wiki 條目內容。
+            system_prompt = dedent(
+                f"""
+                你是一個專業的知識管理專家。請根據新提供的科學文章資訊，更新現有的 Wiki 條目內容。
 
-## 更新要求：
-1. 保留現有內容的有價值部分
-2. 整合新資訊，避免重複
-3. 確保內容的連貫性和完整性
-4. 在頁面底部的 References 部分新增新的引用
-5. 使用 APA 8 格式新增引用
+                ## 更新要求：
+                1. 保留現有內容的有價值部分
+                2. 整合新資訊，避免重複
+                3. 確保內容的連貫性和完整性
+                4. 在頁面底部的 References 部分新增新的引用
+                5. 使用 APA 8 格式新增引用
 
-## 內容類型：{content_type}
-## 條目主題：{topic}
+                ## 內容類型：{content_type}
+                ## 條目主題：{topic}
 
-請回傳完整的更新後 Markdown 內容。"""
-
+                請回傳完整的更新後 Markdown 內容。
+            """
+            )
             # 先將完整內容翻譯成繁體中文
             translated_content = (
                 self.translation_service.translate_to_traditional_chinese(
                     article_info["full_story"]
                 )
             )
+            human_prompt = dedent(
+                f"""
+                現有條目內容：
+                {existing_content}
 
-            human_prompt = f"""現有條目內容：
-{existing_content}
+                ---
 
----
+                新增資訊來源：
+                標題：{article_info['title']}
+                來源：{article_info['source']}
+                日期：{article_info['date']}
+                摘要：{article_info['summary']}
+                完整內容：{translated_content}
+                URL：{article_info['url']}
 
-新增資訊來源：
-標題：{article_info['title']}
-來源：{article_info['source']}
-日期：{article_info['date']}
-摘要：{article_info['summary']}
-完整內容：{translated_content}
-URL：{article_info['url']}
-
-請更新現有條目，整合新資訊。"""
-
+                請更新現有條目，整合新資訊。
+            """
+            )
         else:
-            system_prompt = f"""你是一個專業的知識管理專家。請根據科學文章資訊建立 Wiki 條目內容。
+            system_prompt = dedent(
+                f"""
+                你是一個專業的知識管理專家。請根據科學文章資訊建立 Wiki 條目內容。
 
-## 建立要求：
-1. 使用清晰的 Markdown 格式
-2. 內容應該準確、簡潔、易於理解
-3. 在頁面底部新增 References 部分，使用 APA 8 格式
-4. 根據內容類型調整結構和重點
+                ## 建立要求：
+                1. 使用清晰的 Markdown 格式
+                2. 內容應該準確、簡潔、易於理解
+                3. 在頁面底部新增 References 部分，使用 APA 8 格式
+                4. 根據內容類型調整結構和重點
 
-## 內容類型：{content_type}
-## 條目主題：{topic}
+                ## 內容類型：{content_type}
+                ## 條目主題：{topic}
 
-請回傳完整的 Markdown 內容。"""
-
+                請回傳完整的 Markdown 內容。
+            """
+            )
             # 先將完整內容翻譯成繁體中文
             translated_content = (
                 self.translation_service.translate_to_traditional_chinese(
                     article_info["full_story"]
                 )
             )
+            human_prompt = dedent(
+                f"""
+                請根據以下科學文章資訊建立 Wiki 條目：
 
-            human_prompt = f"""請根據以下科學文章資訊建立 Wiki 條目：
-
-標題：{article_info['title']}
-來源：{article_info['source']}
-日期：{article_info['date']}
-摘要：{article_info['summary']}
-完整內容：{translated_content}
-URL：{article_info['url']}"""
-
+                標題：{article_info['title']}
+                來源：{article_info['source']}
+                日期：{article_info['date']}
+                摘要：{article_info['summary']}
+                完整內容：{translated_content}
+                URL：{article_info['url']}
+            """
+            )
         messages = [
             SystemMessage(content=system_prompt),
             HumanMessage(content=human_prompt),
@@ -287,26 +300,32 @@ URL：{article_info['url']}"""
         if not self.llm or not existing_pages:
             return []
 
-        system_prompt = """你是一個知識管理專家。請分析新主題與現有頁面的相關性，判斷是否應該合併到現有頁面而不是建立新頁面。
+        system_prompt = dedent(
+            """
+            你是一個知識管理專家。請分析新主題與現有頁面的相關性，判斷是否應該合併到現有頁面而不是建立新頁面。
 
-請評估每個現有頁面與新主題的相關性，回傳 0-1 之間的分數：
-- 0.8-1.0: 高度相關，建議合併
-- 0.5-0.8: 中等相關，可考慮合併
-- 0-0.5: 低相關性，建議獨立建立
+            請評估每個現有頁面與新主題的相關性，回傳 0-1 之間的分數：
+            - 0.8-1.0: 高度相關，建議合併
+            - 0.5-0.8: 中等相關，可考慮合併
+            - 0-0.5: 低相關性，建議獨立建立
 
-只回傳 JSON 格式的結果，包含 page_title 和 similarity_score 欄位的陣列。"""
-
+            只回傳 JSON 格式的結果，包含 page_title 和 similarity_score 欄位的陣列。
+        """
+        )
         existing_titles = [
             page["title"] for page in existing_pages[:10]
         ]  # 限制數量避免過長
 
-        human_prompt = f"""新主題：{new_topic}
+        human_prompt = dedent(
+            f"""
+            新主題：{new_topic}
 
-現有頁面標題：
-{chr(10).join(existing_titles)}
+            現有頁面標題：
+            {chr(10).join(existing_titles)}
 
-請評估相關性並回傳 JSON 結果。"""
-
+            請評估相關性並回傳 JSON 結果。
+        """
+        )
         messages = [
             SystemMessage(content=system_prompt),
             HumanMessage(content=human_prompt),
@@ -351,19 +370,21 @@ URL：{article_info['url']}"""
         """
         if existing_content:
             # 如果有現有內容，簡單追加新資訊
-            new_section = f"""
+            new_section = dedent(
+                f"""
+                
+                ## 新增資訊 ({article_info.get('date', '未知日期')})
 
-## 新增資訊 ({article_info.get('date', '未知日期')})
+                基於 ScienceDaily 文章《{article_info.get('title', '未知標題')}》的資訊：
 
-基於 ScienceDaily 文章《{article_info.get('title', '未知標題')}》的資訊：
+                ### 摘要
+                {article_info.get('summary', '無摘要資訊')}
 
-### 摘要
-{article_info.get('summary', '無摘要資訊')}
-
-### 詳細內容
-{article_info.get('full_story', '無詳細內容')}
-
-"""
+                ### 詳細內容
+                {article_info.get('full_story', '無詳細內容')}
+                
+            """
+            )
             # 檢查是否已有 References 部分
             if (
                 "## References" in existing_content
@@ -390,24 +411,27 @@ URL：{article_info['url']}"""
                 )
         else:
             # 建立新內容
-            content = f"""# {topic}
+            content = dedent(
+                f"""
+                # {topic}
 
-## 概述
+                ## 概述
 
-{article_info.get('summary', '無摘要資訊')}
+                {article_info.get('summary', '無摘要資訊')}
 
-## 詳細資訊
+                ## 詳細資訊
 
-{article_info.get('full_story', '無詳細內容')}
+                {article_info.get('full_story', '無詳細內容')}
 
-## 來源資訊
+                ## 來源資訊
 
-- **來源**: {article_info.get('source', '未知來源')}
-- **發佈日期**: {article_info.get('date', '未知日期')}
-- **原文連結**: {article_info.get('url', '無連結')}
+                - **來源**: {article_info.get('source', '未知來源')}
+                - **發佈日期**: {article_info.get('date', '未知日期')}
+                - **原文連結**: {article_info.get('url', '無連結')}
 
-{self._generate_references_section(article_info)}
-"""
+                {self._generate_references_section(article_info)}
+            """
+            )
             return content
 
     def _generate_references_section(self, article_info: dict[str, str]) -> str:
@@ -432,8 +456,10 @@ URL：{article_info['url']}"""
         else:
             citation = f"{source}. ({date}). *{title}*."
 
-        return f"""
-## References
+        return dedent(
+            f"""
+            ## References
 
-{citation}
-"""
+            {citation}
+        """
+        )

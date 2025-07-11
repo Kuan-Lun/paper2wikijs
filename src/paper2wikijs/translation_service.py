@@ -5,6 +5,7 @@
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
+from textwrap import dedent
 
 from .config import OPENAI_API_KEY
 
@@ -34,15 +35,25 @@ class TranslationService:
         if not self.llm or not text.strip():
             return text
 
-        system_prompt = """你是一個專業的翻譯專家。請將提供的文本翻譯成繁體中文。
+        system_prompt = dedent(
+            """
+            你是一個專業的翻譯專家。請將提供的文本翻譯成繁體中文。
 
-要求：
-1. 保持原文的意思和結構
-2. 使用繁體中文字符
-3. 保持專業術語的準確性
-4. 只回傳翻譯結果，不要包含其他說明文字"""
+            要求：
+            1. 保持原文的意思和結構
+            2. 使用繁體中文字符
+            3. 保持專業術語的準確性
+            4. 只回傳翻譯結果，不要包含其他說明文字
+        """
+        )
 
-        human_prompt = f"請將以下文本翻譯成繁體中文：\n\n{text}"
+        human_prompt = dedent(
+            f"""
+            請將以下文本翻譯成繁體中文：
+
+            {text}
+        """
+        )
 
         messages = [
             SystemMessage(content=system_prompt),
@@ -76,15 +87,25 @@ class TranslationService:
         if not self.llm or not text.strip():
             return text
 
-        system_prompt = f"""你是一個專業的翻譯專家。請將提供的文本翻譯成{target_language}。
+        system_prompt = dedent(
+            f"""
+            你是一個專業的翻譯專家。請將提供的文本翻譯成{target_language}。
 
-要求：
-1. 保持原文的意思和結構
-2. 使用正確的目標語言字符和語法
-3. 保持專業術語的準確性
-4. 只回傳翻譯結果，不要包含其他說明文字"""
+            要求：
+            1. 保持原文的意思和結構
+            2. 使用正確的目標語言字符和語法
+            3. 保持專業術語的準確性
+            4. 只回傳翻譯結果，不要包含其他說明文字
+        """
+        )
 
-        human_prompt = f"請將以下文本翻譯成{target_language}：\n\n{text}"
+        human_prompt = dedent(
+            f"""
+            請將以下文本翻譯成{target_language}：
+
+            {text}
+        """
+        )
 
         messages = [
             SystemMessage(content=system_prompt),
