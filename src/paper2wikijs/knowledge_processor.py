@@ -179,8 +179,7 @@ class KnowledgeProcessor:
             產生的 Markdown 內容
         """
         if not self.llm:
-            # 如果沒有 LLM，產生基本的 Markdown 內容
-            return self._generate_basic_content(article_info, topic, existing_content)
+            raise ValueError("LLM 未初始化，無法生成內容。請檢查 API 金鑰或模型名稱。")
         if existing_content:
             system_prompt = dedent(
                 f"""
