@@ -25,6 +25,52 @@ class PageProcessingResult:
 
 
 @dataclass
+class PreviewResult:
+    """預覽分析結果類別"""
+
+    success: bool
+    article_info: Optional[dict[str, str]] = None
+    analysis: Optional[dict[str, Any]] = None
+    existing_pages: Optional[list[dict]] = None
+    merge_suggestions: Optional[list[tuple]] = None
+    error: Optional[str] = None
+
+    def get_concepts_count(self) -> int:
+        """取得概念數量"""
+        if not self.analysis:
+            return 0
+        return len(self.analysis.get("concepts", []))
+
+    def get_methods_count(self) -> int:
+        """取得方法數量"""
+        if not self.analysis:
+            return 0
+        return len(self.analysis.get("methods", []))
+
+    def get_applications_count(self) -> int:
+        """取得應用數量"""
+        if not self.analysis:
+            return 0
+        return len(self.analysis.get("applications", []))
+
+    def get_main_topic(self) -> str:
+        """取得主要主題"""
+        if not self.analysis:
+            return "未知"
+        return self.analysis.get("main_topic", "未知")
+
+    def has_merge_suggestions(self) -> bool:
+        """檢查是否有合併建議"""
+        return bool(self.merge_suggestions)
+
+    def get_existing_pages_count(self) -> int:
+        """取得現有相關頁面數量"""
+        if not self.existing_pages:
+            return 0
+        return len(self.existing_pages)
+
+
+@dataclass
 class ProcessingResult:
     """處理結果類別，封裝所有處理結果資訊"""
 
@@ -338,7 +384,7 @@ class ScienceDaily2WikiService:
                 error=str(e),
             )
 
-    def preview_analysis(self, url: str) -> dict[str, Any]:
+    def preview_analysis(self, url: str) -> PreviewResult:
         """
         預覽分析結果，不實際建立頁面
 
@@ -352,7 +398,7 @@ class ScienceDaily2WikiService:
         article_info = self.extractor.extract_article_info(url)
 
         if not article_info["title"]:
-            return {"success": False, "error": "無法提取文章標題"}
+            return PreviewResult(success=False, error="無法提取文章標題")
 
         # 分析知識結構
         analysis_result = self.knowledge_processor.analyze_content_for_wiki_structure(
@@ -368,10 +414,10 @@ class ScienceDaily2WikiService:
             main_topic, existing_pages
         )
 
-        return {
-            "success": True,
-            "article_info": article_info,
-            "analysis": analysis_result,
-            "existing_pages": existing_pages,
-            "merge_suggestions": merge_suggestions,
-        }
+        return PreviewResult(
+            success=True,
+            article_info=article_info,
+            analysis=analysis_result,
+            existing_pages=existing_pages,
+            merge_suggestions=merge_suggestions,
+        )

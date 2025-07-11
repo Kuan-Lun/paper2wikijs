@@ -86,7 +86,7 @@ def get_page_content(page_id: int):
 
 def sciencedaily_to_wiki(
     url: str, preview_only: bool = False, main_entry_only: bool = False
-) -> dict:
+):
     """
     將 ScienceDaily 文章轉換為 Wiki 條目的主要函數
 
@@ -96,7 +96,7 @@ def sciencedaily_to_wiki(
         main_entry_only: 是否只創建主條目，不拆分子條目
 
     Returns:
-        處理結果字典
+        處理結果物件 (PreviewResult 或 ProcessingResult)
     """
     service = ScienceDaily2WikiService()
 
@@ -113,36 +113,36 @@ if __name__ == "__main__":
     print("=== 預覽分析結果 ===")
     preview_result = sciencedaily_to_wiki(url, preview_only=True)
 
-    if preview_result["success"]:
-        print(f"文章標題: {preview_result['article_info']['title']}")
-        print(f"主要話題: {preview_result['analysis']['main_topic']}")
-        print(f"識別的概念: {preview_result['analysis']['concepts']}")
-        print(f"識別的方法: {preview_result['analysis']['methods']}")
-        print(f"識別的應用: {preview_result['analysis']['applications']}")
-        print(f"建議標籤: {preview_result['analysis']['suggested_tags']}")
+    if preview_result.success:
+        print(f"文章標題: {preview_result.article_info['title']}")
+        print(f"主要話題: {preview_result.get_main_topic()}")
+        print(f"識別的概念: {preview_result.analysis['concepts']}")
+        print(f"識別的方法: {preview_result.analysis['methods']}")
+        print(f"識別的應用: {preview_result.analysis['applications']}")
+        print(f"建議標籤: {preview_result.analysis['suggested_tags']}")
 
-        if preview_result["merge_suggestions"]:
+        if preview_result.has_merge_suggestions():
             print("\n=== 合併建議 ===")
-            for title, score in preview_result["merge_suggestions"]:
+            for title, score in preview_result.merge_suggestions:
                 print(f"- {title} (相似度: {score:.2f})")
 
         # 詢問是否繼續創建頁面
         print("\n=== 創建 Wiki 頁面 ===")
         result = sciencedaily_to_wiki(url, main_entry_only=True)  # 先只創建主條目
 
-        if result["success"]:
+        if result.success:
             print("處理完成!")
-            if result["created_pages"]:
+            if result.created_pages:
                 print("創建的頁面:")
-                for page in result["created_pages"]:
-                    print(f"- {page['title']} ({page['type']})")
+                for page in result.created_pages:
+                    print(f"- {page.title} ({page.type})")
 
-            if result["updated_pages"]:
+            if result.updated_pages:
                 print("更新的頁面:")
-                for page in result["updated_pages"]:
-                    print(f"- {page['title']} ({page['type']})")
+                for page in result.updated_pages:
+                    print(f"- {page.title} ({page.type})")
     else:
-        print(f"預覽失敗: {preview_result.get('error', '未知錯誤')}")
+        print(f"預覽失敗: {preview_result.error or '未知錯誤'}")
 
     # 保留原有的測試代碼
     print("\n=== 原有功能測試 ===")

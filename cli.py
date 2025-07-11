@@ -75,24 +75,24 @@ def main():
             print("=== 預覽分析結果 ===")
             result = service.preview_analysis(args.url)
 
-            if result["success"]:
-                article_info = result["article_info"]
-                analysis = result["analysis"]
+            if result.success:
+                article_info = result.article_info
+                analysis = result.analysis
 
                 print(f"文章標題: {article_info['title']}")
                 print(f"來源: {article_info['source']}")
                 print(f"日期: {article_info['date']}")
                 print(f"摘要: {article_info['summary'][:100]}...")
                 print()
-                print(f"主要話題: {analysis['main_topic']}")
-                print(f"識別的概念: {len(analysis['concepts'])} 個")
+                print(f"主要話題: {result.get_main_topic()}")
+                print(f"識別的概念: {result.get_concepts_count()} 個")
                 if analysis["concepts"]:
                     for i, concept in enumerate(analysis["concepts"][:5], 1):
                         print(f"  {i}. {concept}")
                     if len(analysis["concepts"]) > 5:
                         print(f"  ... 還有 {len(analysis['concepts']) - 5} 個")
 
-                print(f"識別的方法: {len(analysis['methods'])} 個")
+                print(f"識別的方法: {result.get_methods_count()} 個")
                 if analysis["methods"]:
                     for i, method in enumerate(analysis["methods"][:3], 1):
                         print(f"  {i}. {method}")
@@ -101,53 +101,53 @@ def main():
 
                 print(f"建議標籤: {', '.join(analysis['suggested_tags'])}")
 
-                if result["merge_suggestions"]:
+                if result.has_merge_suggestions():
                     print("\n=== 合併建議 ===")
-                    for title, score in result["merge_suggestions"]:
+                    for title, score in result.merge_suggestions:
                         print(f"- {title} (相似度: {score:.2f})")
 
-                if result["existing_pages"]:
-                    print(f"\n找到 {len(result['existing_pages'])} 個相關現有頁面")
+                if result.existing_pages:
+                    print(f"\n找到 {result.get_existing_pages_count()} 個相關現有頁面")
 
             else:
-                print(f"預覽失敗: {result.get('error', '未知錯誤')}")
+                print(f"預覽失敗: {result.error or '未知錯誤'}")
                 return 1
 
         elif args.create:
             print("=== 建立 Wiki 頁面 ===")
             result = service.process_sciencedaily_url(args.url, args.main_only)
 
-            if result["success"]:
+            if result.success:
                 print("處理完成!")
-                print(f"文章標題: {result['article_info']['title']}")
+                print(f"文章標題: {result.article_info['title']}")
 
-                if result["created_pages"]:
-                    print(f"\n建立了 {len(result['created_pages'])} 個頁面:")
-                    for page in result["created_pages"]:
-                        status = "成功" if page["success"] else "失敗"
-                        print(f"  {status} {page['title']} ({page['type']})")
-                        if not page["success"]:
+                if result.created_pages:
+                    print(f"\n建立了 {len(result.created_pages)} 個頁面:")
+                    for page in result.created_pages:
+                        status = "成功" if page.success else "失敗"
+                        print(f"  {status} {page.title} ({page.type})")
+                        if not page.success:
                             print(
-                                f"    錯誤: {page.get('error', page.get('message', '未知錯誤'))}"
+                                f"    錯誤: {page.error or page.message or '未知錯誤'}"
                             )
 
-                if result["updated_pages"]:
-                    print(f"\n更新了 {len(result['updated_pages'])} 個頁面:")
-                    for page in result["updated_pages"]:
-                        status = "成功" if page["success"] else "失敗"
-                        print(f"  {status} {page['title']} ({page['type']})")
-                        if not page["success"]:
+                if result.updated_pages:
+                    print(f"\n更新了 {len(result.updated_pages)} 個頁面:")
+                    for page in result.updated_pages:
+                        status = "成功" if page.success else "失敗"
+                        print(f"  {status} {page.title} ({page.type})")
+                        if not page.success:
                             print(
-                                f"    錯誤: {page.get('error', page.get('message', '未知錯誤'))}"
+                                f"    錯誤: {page.error or page.message or '未知錯誤'}"
                             )
 
-                if result["merge_suggestions"]:
+                if result.merge_suggestions:
                     print("\n=== 建議的合併機會 ===")
-                    for title, score in result["merge_suggestions"]:
+                    for title, score in result.merge_suggestions:
                         print(f"- {title} (相似度: {score:.2f})")
 
             else:
-                print(f"處理失敗: {result.get('error', '未知錯誤')}")
+                print(f"處理失敗: {result.error or '未知錯誤'}")
                 return 1
 
     except KeyboardInterrupt:
