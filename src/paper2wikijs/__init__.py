@@ -7,6 +7,7 @@ from .service import ScienceDaily2WikiService
 from .sciencedaily_extractor import ScienceDailyExtractor
 from .wikijs_client import WikiJSClient
 from .knowledge_processor import KnowledgeProcessor
+from .translation_service import TranslationService
 
 from .config import (
     OPENAI_API_KEY,
@@ -21,6 +22,7 @@ __all__ = [
     "ScienceDailyExtractor",
     "WikiJSClient",
     "KnowledgeProcessor",
+    "TranslationService",
     # Configuration variables
     "OPENAI_API_KEY",
     "WIKIJS_GRAPHQL_URL",
