@@ -3,10 +3,64 @@ ScienceDaily 到 Wiki 的主要服務類
 整合所有功能，實現從 ScienceDaily URL 到 Wiki 條目的完整流程
 """
 
-from typing import Dict, List
+from typing import Optional, Any
+from dataclasses import dataclass, field
+
 from .sciencedaily_extractor import ScienceDailyExtractor
 from .wikijs_client import WikiJSClient
 from .knowledge_processor import KnowledgeProcessor
+
+
+@dataclass
+class PageProcessingResult:
+    """單一頁面處理結果"""
+
+    action: str  # "created", "updated", "failed", "skipped"
+    title: str
+    path: Optional[str] = None
+    type: Optional[str] = None
+    success: bool = False
+    message: Optional[str] = None
+    error: Optional[str] = None
+
+
+@dataclass
+class ProcessingResult:
+    """處理結果類別，封裝所有處理結果資訊"""
+
+    success: bool
+    article_info: Optional[dict[str, str]] = None
+    analysis: Optional[dict[str, Any]] = None
+    merge_suggestions: Optional[list[tuple]] = None
+    created_pages: list[PageProcessingResult] = field(default_factory=list)
+    updated_pages: list[PageProcessingResult] = field(default_factory=list)
+    error: Optional[str] = None
+
+    def add_created_page(self, page_result: PageProcessingResult):
+        """新增建立的頁面結果"""
+        self.created_pages.append(page_result)
+
+    def add_updated_page(self, page_result: PageProcessingResult):
+        """新增更新的頁面結果"""
+        self.updated_pages.append(page_result)
+
+    def get_total_pages_count(self) -> int:
+        """取得總頁面處理數量"""
+        return len(self.created_pages) + len(self.updated_pages)
+
+    def get_successful_pages_count(self) -> int:
+        """取得成功處理的頁面數量"""
+        successful_created = sum(1 for page in self.created_pages if page.success)
+        successful_updated = sum(1 for page in self.updated_pages if page.success)
+        return successful_created + successful_updated
+
+    def has_errors(self) -> bool:
+        """檢查是否有錯誤"""
+        if self.error:
+            return True
+        failed_created = any(not page.success for page in self.created_pages)
+        failed_updated = any(not page.success for page in self.updated_pages)
+        return failed_created or failed_updated
 
 
 class ScienceDaily2WikiService:
@@ -25,7 +79,7 @@ class ScienceDaily2WikiService:
 
     def process_sciencedaily_url(
         self, url: str, create_main_entry_only: bool = False
-    ) -> Dict[str, any]:
+    ) -> ProcessingResult:
         """
         處理 ScienceDaily URL，建立相應的 Wiki 條目
 
@@ -36,14 +90,14 @@ class ScienceDaily2WikiService:
         Returns:
             處理結果字典
         """
-        # 1. 提取文章資訊
+        # 提取文章資訊
         print("正在提取文章資訊...")
         article_info = self.extractor.extract_article_info(url)
 
         if not article_info["title"]:
-            return {"success": False, "error": "無法提取文章標題"}
+            return ProcessingResult(success=False, error="無法提取文章標題")
 
-        # 2. 分析知識結構
+        # 分析知識結構
         print("正在分析知識結構...")
         analysis_result = self.knowledge_processor.analyze_content_for_wiki_structure(
             article_info
@@ -51,26 +105,24 @@ class ScienceDaily2WikiService:
 
         main_topic = analysis_result.get("main_topic", article_info["title"])
 
-        # 3. 檢查是否有現有相關頁面
+        # 檢查是否有現有相關頁面
         print("正在搜尋相關頁面...")
         existing_pages = self.wiki_client.search_pages(main_topic)
 
-        # 4. 建議合併機會
+        # 建議合併機會
         print("正在建議合併機會...")
         merge_suggestions = self.knowledge_processor.suggest_merge_opportunities(
             main_topic, existing_pages
         )
 
-        results = {
-            "success": True,
-            "article_info": article_info,
-            "analysis": analysis_result,
-            "merge_suggestions": merge_suggestions,
-            "created_pages": [],
-            "updated_pages": [],
-        }
+        results = ProcessingResult(
+            success=True,
+            article_info=article_info,
+            analysis=analysis_result,
+            merge_suggestions=merge_suggestions,
+        )
 
-        # 5. 處理主條目
+        # 處理主條目
         print("正在處理主條目...")
         main_page_result = self._process_main_entry(
             article_info,
@@ -80,30 +132,32 @@ class ScienceDaily2WikiService:
             merge_suggestions,
         )
 
-        if main_page_result["action"] == "created":
-            results["created_pages"].append(main_page_result)
-        elif main_page_result["action"] == "updated":
-            results["updated_pages"].append(main_page_result)
+        if main_page_result.action == "created":
+            results.add_created_page(main_page_result)
+        elif main_page_result.action == "updated":
+            results.add_updated_page(main_page_result)
 
-        # 6. 如果不只建立主條目，則建立子條目
+        # 如果不只建立主條目，則建立子條目
         print("正在處理子條目...")
         if not create_main_entry_only:
             sub_entries_result = self._process_sub_entries(
                 article_info, analysis_result
             )
-            results["created_pages"].extend(sub_entries_result["created"])
-            results["updated_pages"].extend(sub_entries_result["updated"])
+            for page in sub_entries_result["created"]:
+                results.add_created_page(page)
+            for page in sub_entries_result["updated"]:
+                results.add_updated_page(page)
 
         return results
 
     def _process_main_entry(
         self,
-        article_info: Dict[str, str],
+        article_info: dict[str, str],
         main_topic: str,
-        tags: List[str],
-        existing_pages: List[Dict],
-        merge_suggestions: List[tuple],
-    ) -> Dict[str, any]:
+        tags: list[str],
+        existing_pages: list[dict],
+        merge_suggestions: list[tuple],
+    ) -> PageProcessingResult:
         """處理主條目"""
 
         # 檢查是否應該合併到現有頁面
@@ -130,8 +184,8 @@ class ScienceDaily2WikiService:
         return self._create_new_page(article_info, "main", main_topic, tags)
 
     def _process_sub_entries(
-        self, article_info: Dict[str, str], analysis_result: Dict[str, any]
-    ) -> Dict[str, List[Dict]]:
+        self, article_info: dict[str, str], analysis_result: dict[str, Any]
+    ) -> dict[str, list[PageProcessingResult]]:
         """處理子條目"""
         created_pages = []
         updated_pages = []
@@ -142,9 +196,9 @@ class ScienceDaily2WikiService:
         for i, concept in enumerate(concepts, 1):
             print(f"  - 概念 {i}/{len(concepts)}: {concept}")
             result = self._create_or_update_entry(article_info, "concept", concept)
-            if result["action"] == "created":
+            if result.action == "created":
                 created_pages.append(result)
-            elif result["action"] == "updated":
+            elif result.action == "updated":
                 updated_pages.append(result)
 
         # 處理方法條目
@@ -153,9 +207,9 @@ class ScienceDaily2WikiService:
         for i, method in enumerate(methods, 1):
             print(f"  - 方法 {i}/{len(methods)}: {method}")
             result = self._create_or_update_entry(article_info, "method", method)
-            if result["action"] == "created":
+            if result.action == "created":
                 created_pages.append(result)
-            elif result["action"] == "updated":
+            elif result.action == "updated":
                 updated_pages.append(result)
 
         # 處理應用條目
@@ -166,25 +220,25 @@ class ScienceDaily2WikiService:
             result = self._create_or_update_entry(
                 article_info, "application", application
             )
-            if result["action"] == "created":
+            if result.action == "created":
                 created_pages.append(result)
-            elif result["action"] == "updated":
+            elif result.action == "updated":
                 updated_pages.append(result)
 
         return {"created": created_pages, "updated": updated_pages}
 
     def _create_or_update_entry(
-        self, article_info: Dict[str, str], content_type: str, topic: str
-    ) -> Dict[str, any]:
+        self, article_info: dict[str, str], content_type: str, topic: str
+    ) -> PageProcessingResult:
         """建立或更新條目"""
         if not topic:
-            return {
-                "action": "skipped",
-                "title": topic,
-                "type": content_type,
-                "success": False,
-                "error": "Topic is empty, skipping.",
-            }
+            return PageProcessingResult(
+                action="skipped",
+                title=topic,
+                type=content_type,
+                success=False,
+                error="Topic is empty, skipping.",
+            )
         # 搜尋現有相關頁面
         print(f"    正在為 '{topic}' 搜尋現有頁面...")
         existing_pages = self.wiki_client.search_pages(topic)
@@ -201,11 +255,11 @@ class ScienceDaily2WikiService:
 
     def _create_new_page(
         self,
-        article_info: Dict[str, str],
+        article_info: dict[str, str],
         content_type: str,
         topic: str,
-        tags: List[str] = None,
-    ) -> Dict[str, any]:
+        tags: Optional[list[str]] = None,
+    ) -> PageProcessingResult:
         """建立新頁面"""
         try:
             # 生成內容
@@ -227,27 +281,27 @@ class ScienceDaily2WikiService:
                 description=description,
             )
 
-            return {
-                "action": "created",
-                "title": topic,
-                "path": path,
-                "type": content_type,
-                "success": result["succeeded"],
-                "message": result.get("message", ""),
-            }
+            return PageProcessingResult(
+                action="created",
+                title=topic,
+                path=path,
+                type=content_type,
+                success=result["succeeded"],
+                message=result.get("message", ""),
+            )
 
         except Exception as e:
-            return {
-                "action": "failed",
-                "title": topic,
-                "type": content_type,
-                "success": False,
-                "error": str(e),
-            }
+            return PageProcessingResult(
+                action="failed",
+                title=topic,
+                type=content_type,
+                success=False,
+                error=str(e),
+            )
 
     def _update_existing_page(
-        self, page: Dict, article_info: Dict[str, str], content_type: str, topic: str
-    ) -> Dict[str, any]:
+        self, page: dict, article_info: dict[str, str], content_type: str, topic: str
+    ) -> PageProcessingResult:
         """更新現有頁面"""
         try:
             # 取得現有內容
@@ -266,25 +320,25 @@ class ScienceDaily2WikiService:
                 page_id=int(page["id"]), title=page["title"], content=updated_content
             )
 
-            return {
-                "action": "updated",
-                "title": page["title"],
-                "path": page["path"],
-                "type": content_type,
-                "success": result["succeeded"],
-                "message": result.get("message", ""),
-            }
+            return PageProcessingResult(
+                action="updated",
+                title=page["title"],
+                path=page["path"],
+                type=content_type,
+                success=result["succeeded"],
+                message=result.get("message", ""),
+            )
 
         except Exception as e:
-            return {
-                "action": "failed",
-                "title": page["title"],
-                "type": content_type,
-                "success": False,
-                "error": str(e),
-            }
+            return PageProcessingResult(
+                action="failed",
+                title=page["title"],
+                type=content_type,
+                success=False,
+                error=str(e),
+            )
 
-    def preview_analysis(self, url: str) -> Dict[str, any]:
+    def preview_analysis(self, url: str) -> dict[str, Any]:
         """
         預覽分析結果，不實際建立頁面
 
