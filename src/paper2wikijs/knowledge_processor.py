@@ -180,6 +180,11 @@ class KnowledgeProcessor:
         """
         if not self.llm:
             raise ValueError("LLM 未初始化，無法生成內容。請檢查 API 金鑰或模型名稱。")
+
+        translated_content = self.translation_service.translate_to_traditional_chinese(
+            article_info["full_story"]
+        )
+
         if existing_content:
             system_prompt = dedent(
                 f"""
@@ -198,12 +203,7 @@ class KnowledgeProcessor:
                 請回傳完整的更新後 Markdown 內容，並確保每一句話都有來源標註。
             """
             )
-            # 先將完整內容翻譯成繁體中文
-            translated_content = (
-                self.translation_service.translate_to_traditional_chinese(
-                    article_info["full_story"]
-                )
-            )
+
             human_prompt = dedent(
                 f"""
                 現有條目內容：
@@ -240,12 +240,7 @@ class KnowledgeProcessor:
                 請回傳完整的 Markdown 內容，並確保每一句話都有來源標註。
             """
             )
-            # 先將完整內容翻譯成繁體中文
-            translated_content = (
-                self.translation_service.translate_to_traditional_chinese(
-                    article_info["full_story"]
-                )
-            )
+
             human_prompt = dedent(
                 f"""
                 請根據以下科學文章資訊建立 Wiki 條目：
