@@ -112,7 +112,7 @@ class ProcessingResult:
 class ScienceDaily2WikiService:
     """ScienceDaily 到 Wiki 的主要服務類"""
 
-    def __init__(self, config_path: str = "config.json"):
+    def __init__(self):
         """
         初始化服務
 
