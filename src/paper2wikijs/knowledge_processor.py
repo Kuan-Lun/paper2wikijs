@@ -8,7 +8,6 @@ from typing import Any
 from textwrap import dedent
 
 from langchain_openai import ChatOpenAI
-from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from .config import OPENAI_API_KEY
@@ -30,7 +29,6 @@ class KnowledgeProcessor:
         # 優先從環境變數取得 API 金鑰
 
         self.llm = ChatOpenAI(model=model_name, temperature=0.1, api_key=OPENAI_API_KEY)
-        self.output_parser = StrOutputParser()
         self.translation_service = TranslationService(model_name)
 
     def analyze_content_for_wiki_structure(
