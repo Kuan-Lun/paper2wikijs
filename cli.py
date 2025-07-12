@@ -43,7 +43,7 @@ def main():
 
     try:
         # 初始化服務
-        service = ScienceDaily2WikiService(args.config)
+        service = ScienceDaily2WikiService()
 
         if args.preview:
             print("=== 預覽分析結果 ===")
