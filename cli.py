@@ -32,12 +32,6 @@ def main():
         "--main-only", "-m", action="store_true", help="只建立主條目，不拆分子條目"
     )
 
-    parser.add_argument(
-        "--config",
-        default="config.json",
-        help="配置檔案路徑 (預設: config.json，當環境變數不可用時使用)",
-    )
-
     args = parser.parse_args()
 
     # 檢查 URL 格式
